@@ -1,0 +1,49 @@
+#include "snake_server/SnakeServer.h"
+
+SnakeServer::SnakeServer(int width, int height)
+    : Engine(width, height) {
+}
+
+void SnakeServer::handleInput() {
+    int ch = getch();
+    if (ch != ERR) {
+        if (ch == 'q' || ch == 'Q') {
+            running = false;
+        }
+        else if (ch == KEY_UP) {
+        }
+        else if (ch == KEY_DOWN) {
+        }
+        else if (ch == KEY_LEFT) {
+        }
+        else if (ch == KEY_RIGHT) {
+        }
+    }
+    flushinp();  // Flush any remaining input
+}
+
+void SnakeServer::create() {
+}
+
+void SnakeServer::update() {
+}
+
+void SnakeServer::render() {
+    clear();
+
+    for (int y = 0; y <= height + 1; y++) {
+        for (int x = 0; x <= width + 1; x++) {
+            if (x == 0 || y == 0 || x == width + 1 || y == height + 1) {
+                mvaddch(y, x, '.');  // boundary
+            }
+            else {
+                mvaddch(y, x, ' ');  // empty space
+            }
+        }
+    }
+
+    mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);
+    mvprintw(height + 3, 0, "Press 'q' to quit.");
+
+    refresh();
+}
