@@ -12,6 +12,7 @@ find_package(Curses REQUIRED)
 add_library(
     engine_lib STATIC
     src/engine/Engine.cpp
+    src/engine/NetworkLayer.cpp
 )
 
 target_include_directories(
