@@ -1,10 +1,12 @@
 #include "snake_server/SnakeServer.h"
 
 SnakeServer::SnakeServer(int width, int height)
-    : Engine(width, height) {
+    : Engine(width, height)
+    , network() {
 }
 
 void SnakeServer::handleInput() {
+    network.pollMessages();
     int ch = getch();
     if (ch != ERR) {
         if (ch == 'q' || ch == 'Q') {
@@ -29,21 +31,7 @@ void SnakeServer::update() {
 }
 
 void SnakeServer::render() {
-    clear();
+}
 
-    for (int y = 0; y <= height + 1; y++) {
-        for (int x = 0; x <= width + 1; x++) {
-            if (x == 0 || y == 0 || x == width + 1 || y == height + 1) {
-                mvaddch(y, x, '.');  // boundary
-            }
-            else {
-                mvaddch(y, x, ' ');  // empty space
-            }
-        }
-    }
-
-    mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);
-    mvprintw(height + 3, 0, "Press 'q' to quit.");
-
-    refresh();
+void SnakeServer::cleanup() {
 }

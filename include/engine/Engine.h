@@ -16,6 +16,7 @@ protected:
     virtual void create();
     virtual void update();
     virtual void render();
+    virtual void cleanup();
 
     int napMs [100];
     int width;

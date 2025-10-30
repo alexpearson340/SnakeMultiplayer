@@ -6,11 +6,11 @@ Engine::Engine(int width, int height)
     , running(true)
     , score(0)
     , gen(std::random_device()()) {
-    initCurses();
+    create();
 }
 
 Engine::~Engine() {
-    cleanupCurses();
+    cleanup();
 }
 
 void Engine::initCurses() {
@@ -34,8 +34,9 @@ void Engine::update() {}
 
 void Engine::render() {}
 
+void Engine::cleanup() {}
+
 void Engine::run() {
-    create();
     while (running) {
         handleInput();
         update();

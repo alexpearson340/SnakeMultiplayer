@@ -8,4 +8,5 @@ public:
     void create();
     void update();
     void render();
+    void cleanup();
 };

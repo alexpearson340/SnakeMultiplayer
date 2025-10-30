@@ -1,4 +1,5 @@
 #include "engine/Engine.h"
+#include "engine/NetworkLayer.h"
 
 class SnakeServer : public Engine {
 public:
@@ -8,5 +9,9 @@ public:
     void create();
     void update();
     void render();
+    void cleanup();
+
+private:
+    NetworkLayer network;
 };
 

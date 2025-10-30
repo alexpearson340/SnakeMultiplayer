@@ -23,6 +23,7 @@ void SnakeClient::handleInput() {
 }
 
 void SnakeClient::create() {
+    initCurses();
 }
 
 void SnakeClient::update() {
@@ -46,4 +47,8 @@ void SnakeClient::render() {
     mvprintw(height + 3, 0, "Press 'q' to quit.");
 
     refresh();
+}
+
+void SnakeClient::cleanup() {
+    cleanupCurses();
 }
