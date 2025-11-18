@@ -2,7 +2,7 @@
 
 SnakeServer::SnakeServer(int width, int height)
     : Engine(width, height)
-    , network() {
+    , network {8170} {
 }
 
 void SnakeServer::handleInput() {
