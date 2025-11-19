@@ -52,15 +52,7 @@ NetworkLayer::NetworkLayer(int port)
     }
     std::cout << "epollFd=" << epollFd << std::endl;
 
-    // Add server socket to epoll
-    epoll_event event;
-    event.events = EPOLLIN | EPOLLET;  // Edge-triggered
-    event.data.fd = serverFd;
-    if (epoll_ctl(epollFd, EPOLL_CTL_ADD, serverFd, &event) == -1) {
-        close(epollFd);
-        close(serverFd);
-        throw std::runtime_error("Failed to add server socket to epoll");
-    }
+    registerFdWithEpoll(serverFd);
 
     std::cout << "Server listening on port " << port << std::endl;
 }
@@ -69,6 +61,7 @@ std::vector<ClientMessage> NetworkLayer::pollMessages() {
     std::vector<ClientMessage> messages;
     epoll_event events[MAX_EVENTS];
     int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, 0);
+    std::cout << "numEvents=" << numEvents << std::endl;
 
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
@@ -81,14 +74,52 @@ std::vector<ClientMessage> NetworkLayer::pollMessages() {
 }
 
 void NetworkLayer::setNonBlocking(int fd) {
-    // TODO: Implement
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1) {
+        throw std::runtime_error("fcntl F_GETFL failed");
+    }
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+        throw std::runtime_error("fcntl F_SETFL failed");
+    }
+}
+
+void NetworkLayer::registerFdWithEpoll(int fd) {
+    epoll_event event;
+    event.events = EPOLLIN | EPOLLET;  // Edge-triggered
+    event.data.fd = fd;
+    if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
+        close(epollFd);
+        close(fd);
+        throw std::runtime_error("Failed to add fd to epoll");
+    }
 }
 
 void NetworkLayer::acceptNewClient() {
-    // TODO: Implement
+    sockaddr_in clientAddr;
+    socklen_t addrLen = sizeof(clientAddr);
+
+    // Accept the connection - get a new fd for this client
+    int clientFd = accept(serverFd, (sockaddr*)&clientAddr, &addrLen);
+    if (clientFd == -1) {
+        std::cerr << "Accept failed" << std::endl;
+        return;
+    }
+
+    // Make client socket non-blocking too
+    setNonBlocking(clientFd);
+
+    // Add client fd to epoll
+    registerFdWithEpoll(clientFd);
+
+    // Store mapping: fd -> clientId
+    int clientId = nextClientId++;
+    // TODO: Store in fdToClientId and clientIdToFd maps
+
+    std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
 }
 
 ClientMessage NetworkLayer::receiveFromClient(int fd) {
+    std::cout << "receiveFromClient" << std::endl;
     // TODO: Implement
     return ClientMessage{};
 }

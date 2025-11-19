@@ -14,6 +14,7 @@ public:
 
 private:
     void setNonBlocking(int fd);
+    void registerFdWithEpoll(int fd);
     void acceptNewClient();
     ClientMessage receiveFromClient(int fd);
 
