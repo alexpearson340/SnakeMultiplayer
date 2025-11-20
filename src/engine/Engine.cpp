@@ -1,3 +1,4 @@
+#include <ncurses.h>
 #include "engine/Engine.h"
 
 Engine::Engine(int width, int height)

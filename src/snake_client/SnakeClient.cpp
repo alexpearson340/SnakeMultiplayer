@@ -1,3 +1,4 @@
+#include <ncurses.h>
 #include "snake_client/SnakeClient.h"
 
 SnakeClient::SnakeClient(int width, int height)

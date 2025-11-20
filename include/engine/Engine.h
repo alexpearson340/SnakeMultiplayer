@@ -1,5 +1,4 @@
 #include <random>
-#include <ncurses.h>
 
 class Engine {
 public:
