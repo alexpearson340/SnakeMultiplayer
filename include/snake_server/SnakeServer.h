@@ -1,5 +1,7 @@
+#include <unordered_map>
 #include "engine/Engine.h"
 #include "engine/NetworkLayer.h"
+#include "snake_server/Player.h"
 
 class SnakeServer : public Engine {
 public:
@@ -13,5 +15,6 @@ public:
 
 private:
     NetworkLayer network;
+    std::unordered_map<int, Player> clientIdToPlayerMap;
 };
 

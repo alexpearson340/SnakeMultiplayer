@@ -11,7 +11,8 @@
 NetworkLayer::NetworkLayer(int port)
     : serverFd {-1}
     , epollFd {-1}
-    , nextClientId {1} {
+    , nextClientId {1}
+    , fdToClientIdMap {} {
 
     // Create socket
     serverFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -114,12 +115,36 @@ void NetworkLayer::acceptNewClient() {
     // Store mapping: fd -> clientId
     int clientId = nextClientId++;
     // TODO: Store in fdToClientId and clientIdToFd maps
+    fdToClientIdMap[clientFd] = clientId;
 
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
 }
 
 ClientMessage NetworkLayer::receiveFromClient(int fd) {
-    std::cout << "receiveFromClient" << std::endl;
-    // TODO: Implement
-    return ClientMessage{};
+    ClientMessage msg;
+    msg.clientId = fdToClientIdMap.at(fd);
+
+    char buffer[1024];
+    int bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
+
+    if (bytesRead <= 0) {
+        // Connection closed or error
+        std::cout << "Client disconnected (fd: " << fd << ")" << std::endl;
+
+        // Remove from epoll
+        epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
+        close(fd);
+        fdToClientIdMap.erase(fd);
+        msg.data = std::string {""};
+        return msg;
+    }
+
+    // Convert bytes to string
+    buffer[bytesRead] = '\0';
+    msg.data = std::string(buffer, bytesRead);
+    if (!msg.data.empty() && msg.data.back() == '\n') {
+        msg.data.pop_back();
+    }
+    std::cout << "Received from client (fd " << fd << "): " << msg.data << std::endl;
+    return msg;
 }

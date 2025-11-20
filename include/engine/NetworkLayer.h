@@ -1,4 +1,5 @@
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 inline int MAX_EVENTS {10};
@@ -21,4 +22,6 @@ private:
     int serverFd;
     int epollFd;
     int nextClientId;
+
+    std::unordered_map<int, int> fdToClientIdMap;
 };
