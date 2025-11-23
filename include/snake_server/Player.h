@@ -4,10 +4,10 @@ class PlayerNode {
 public:
     PlayerNode(int x, int y);
     
-    void move(int xMove, int yMove); 
-    vold moveto(int xMove, int yMove);
+    void move(int xMove, int yMove);
+    void moveTo(int xMove, int yMove);
     bool isInSnakeBody(int x, int y);
-    void grow());
+    void grow();
     int x() {return xPos;};
     int y() {return yPos;};
 
@@ -17,7 +17,7 @@ private:
     int prevx; 
     int prevY;
     std::unique_ptr<PlayerNode> next {nullptr};
-}
+};
 
 inline PlayerNode::PlayerNode(int x, int y)
     : xPos {x}
@@ -29,28 +29,28 @@ inline void PlayerNode::move(int xMove, int yMove) {
 }
 
 inline void PlayerNode::moveTo(int xMove, int yMove) {
-    xPos = XMove;
+    xPos = xMove;
     yPos = yMove;
     if (next != nullptr) {
-        next->moveTo(prevx, prevy);
+        next->moveTo(prevx, prevY);
     }
     prevx = xPos;
-    prevy = yPos;
+    prevY = yPos;
 }
 
 inline bool PlayerNode::isInSnakeBody(int x, int y) {
     PlayerNode * nextBodyPart { next.get() };
     while (nextBodyPart != nullptr) {
-        if (nextBodyPart->x() = x && nextBodyPart->y() = y) {
+        if (nextBodyPart->x() == x && nextBodyPart->y() == y) {
             return true;
         }
-        nextBodyPart = nextBodyPart-*next.get();
+        nextBodyPart = nextBodyPart->next.get();
     }
     return false;
 }
 
 inline void PlayerNode::grow() {
-    if (next = nullptr) {
+    if (next == nullptr) {
         next = std::make_unique<PlayerNode>(prevx, prevY);
     }
     else {
@@ -59,7 +59,7 @@ inline void PlayerNode::grow() {
 }
 
 struct Player {
-    playerNode head; 
+    PlayerNode head; 
     char direction; 
     std::string name;
 };

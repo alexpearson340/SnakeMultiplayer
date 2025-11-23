@@ -1,17 +1,18 @@
 #include "engine/NetworkLayer.h"
-#include <sys/epoll.h> 
-#include <sys/socket.h> 
+#include <cstdint>
+#include <sys/epoll.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
-#include <unistd.h> 
-#include <fcntl.h> 
+#include <unistd.h>
+#include <fcntl.h>
 #include <cstring>
-#include <stdexcept> 
+#include <stdexcept>
 #include <iostream>
 
 NetworkLayer::NetworkLayer(int port)
     : serverFd {-1}
     , epollFd {-1}
-    , nextclientId {1}
+    , nextClientId {1}
     , fdToclientIdMap {} {
 
     // Create socket
@@ -107,7 +108,7 @@ void NetworkLayer::acceptNewClient() {
     setNonBlocking(clientFd);
     registerFdWithEpoll(clientFd);
     
-    int clientId = nextclientId++;
+    int clientId = nextClientId++;
     fdToclientIdMap[clientFd] = clientId;
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
 }

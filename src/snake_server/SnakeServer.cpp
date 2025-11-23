@@ -27,7 +27,7 @@ void SnakeServer::handleInput() {
             std::cout << "KEY_RIGHT" << std::endl;
         }
         else {
-            std::cout < "Unexpected receive from client (clientid" << msg.clientid << "): " << msg.data << std::endl;
+            std::cout << "Unexpected receive from client (clientid" << msg.clientId << "): " << msg.data << std::endl;
         }
     }
 } 

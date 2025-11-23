@@ -16,4 +16,4 @@ public:
 private:
     NetworkLayer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;
-}
+};

@@ -24,7 +24,7 @@ target_link_libraries(
 # CLIENT LIB
 add_library(
     snake_client_lib STATIC
-    src/snake_client/Snakeclient.cpp
+    src/snake_client/SnakeClient.cpp
 )
 target_include_directories(
     snake_client_lib PUBLIC

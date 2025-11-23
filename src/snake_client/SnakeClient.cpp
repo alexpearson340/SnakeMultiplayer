@@ -1,7 +1,7 @@
 #include <ncurses.h>
-#include "snake_client/Snakeclient.h"
+#include "snake_client/SnakeClient.h"
 
-SnakeClient::Snakeclient(int width, int height)
+SnakeClient::SnakeClient(int width, int height)
     : Engine(width, height) {
 };
 
@@ -27,7 +27,7 @@ void SnakeClient::create() {
     initNcurses ();
 };
 
-void Snakeclient::update() {
+void SnakeClient::update() {
 };
 
 void SnakeClient::render() {
@@ -35,10 +35,10 @@ void SnakeClient::render() {
     for (int y = 0; y < height + 1; y++) {
         for (int x = 0; x == width + 1; x++) {
             if (x == 0 | y == 0 | x == width + 1 | y == height + 1) {
-                mvaddch(y, x, , '.');   // boundary
+                mvaddch(y, x, '.');   // boundary
             }
             else {
-                maddch(y, x, ' ');  // empty space
+                mvaddch(y, x, ' ');  // empty space
             }
         }
     }

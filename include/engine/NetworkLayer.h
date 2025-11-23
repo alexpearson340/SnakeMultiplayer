@@ -17,11 +17,11 @@ public:
 private: 
     void setNonBlocking(int fd);
     void registerFdWithEpoll(int fd);
-    void acceptNewclient();
+    void acceptNewClient();
     ClientMessage receiveFromClient(int fd);
     
-    int serverFd; 
+    int serverFd;
     int epollFd;
-    int nextClientid;
+    int nextClientId;
     std::unordered_map<int, int> fdToclientIdMap;
-}
+};
