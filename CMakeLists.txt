@@ -20,7 +20,6 @@ FetchContent_MakeAvailable(json)
 add_library(
     engine_lib STATIC
     src/engine/Engine.cpp
-    src/engine/NetworkLayer.cpp
 )
 
 target_include_directories(
@@ -55,6 +54,7 @@ target_link_libraries(
 add_library(
     snake_server_lib STATIC
     src/snake_server/SnakeServer.cpp
+    src/snake_server/NetworkServer.cpp
 )
 
 target_include_directories(

@@ -1,4 +1,4 @@
-#include "engine/NetworkLayer.h"
+#include "snake_server/NetworkServer.h"
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -8,7 +8,7 @@
 #include <stdexcept>
 #include <iostream>
 
-NetworkLayer::NetworkLayer(int port)
+NetworkServer::NetworkServer(int port)
     : serverFd {-1}
     , epollFd {-1}
     , nextClientId {1}
@@ -58,7 +58,7 @@ NetworkLayer::NetworkLayer(int port)
     std::cout << "Server listening on port " << port << std::endl;
 }
 
-std::vector<ClientMessage> NetworkLayer::pollMessages() {
+std::vector<ClientMessage> NetworkServer::pollMessages() {
     std::vector<ClientMessage> messages;
     epoll_event events[MAX_EVENTS];
     int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, 0);
@@ -77,7 +77,7 @@ std::vector<ClientMessage> NetworkLayer::pollMessages() {
     return messages;
 }
 
-void NetworkLayer::setNonBlocking(int fd) {
+void NetworkServer::setNonBlocking(int fd) {
     int flags = fcntl(fd, F_GETFL, 0);
     if (flags == -1) {
         throw std::runtime_error("fcntl F_GETFL failed");
@@ -87,7 +87,7 @@ void NetworkLayer::setNonBlocking(int fd) {
     }
 }
 
-void NetworkLayer::registerFdWithEpoll(int fd) {
+void NetworkServer::registerFdWithEpoll(int fd) {
     epoll_event event;
     event.events = EPOLLIN | EPOLLET;  // Edge-triggered
     event.data.fd = fd;
@@ -98,7 +98,7 @@ void NetworkLayer::registerFdWithEpoll(int fd) {
     }
 }
 
-ClientMessage NetworkLayer::acceptNewClient() {
+ClientMessage NetworkServer::acceptNewClient() {
     ClientMessage msg;
     msg.messageType = ClientMessageType::ACCEPT_NEW_CLIENT;
     msg.clientId = -1;
@@ -134,7 +134,7 @@ ClientMessage NetworkLayer::acceptNewClient() {
     return msg;
 }
 
-ClientMessage NetworkLayer::receiveFromClient(int fd) {
+ClientMessage NetworkServer::receiveFromClient(int fd) {
     ClientMessage msg;
     msg.clientId = fdToClientIdMap.at(fd);
 
@@ -165,7 +165,7 @@ ClientMessage NetworkLayer::receiveFromClient(int fd) {
     return msg;
 }
 
-void NetworkLayer::broadcast(std::string_view msg) {
+void NetworkServer::broadcast(std::string_view msg) {
     for (const auto & [fd, clientId] : fdToClientIdMap) {
         send(fd, msg.data(), msg.size(), 0);
     }

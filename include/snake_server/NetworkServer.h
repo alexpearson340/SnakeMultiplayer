@@ -18,9 +18,9 @@ struct ClientMessage {
     std::string data;
 };
 
-class NetworkLayer {
+class NetworkServer {
 public:
-    NetworkLayer(int);
+    NetworkServer(int);
     std::vector<ClientMessage> pollMessages();
     void broadcast(std::string_view msg);
 

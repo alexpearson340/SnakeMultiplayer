@@ -2,7 +2,7 @@
 
 #include <unordered_map>
 #include "engine/Engine.h"
-#include "engine/NetworkLayer.h"
+#include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
 
 class SnakeServer : public Engine {
@@ -21,7 +21,7 @@ private:
     void handleClientInput(const ClientMessage &);
     std::string buildGameStatePayload();
 
-    NetworkLayer network;
+    NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;
 };
 
