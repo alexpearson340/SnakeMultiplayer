@@ -1,3 +1,5 @@
+#pragma once
+
 #include <random>
 
 class Engine {
@@ -17,7 +19,7 @@ protected:
     virtual void render();
     virtual void cleanup();
 
-    int napMs [100];
+    int napMs [500];
     int width;
     int height;
     bool running;

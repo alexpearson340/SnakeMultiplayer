@@ -1,3 +1,5 @@
+#pragma once
+
 #include "engine/Engine.h"
 
 class SnakeClient : public Engine {

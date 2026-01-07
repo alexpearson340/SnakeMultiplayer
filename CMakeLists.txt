@@ -8,6 +8,14 @@ set(CMAKE_COMPILE_COMMANDS_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 find_package(Curses REQUIRED)
 
+include(FetchContent)
+FetchContent_Declare(
+    json
+    URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+)
+FetchContent_MakeAvailable(json)
+
 # ENGINE LIB
 add_library(
     engine_lib STATIC
@@ -23,6 +31,7 @@ target_include_directories(
 
 target_link_libraries(
     engine_lib
+    nlohmann_json::nlohmann_json
     ${CURSES_LIBRARIES}
 )
 

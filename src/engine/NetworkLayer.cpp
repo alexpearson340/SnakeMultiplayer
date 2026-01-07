@@ -66,7 +66,10 @@ std::vector<ClientMessage> NetworkLayer::pollMessages() {
 
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
-            acceptNewClient();
+            ClientMessage newClientMessage {acceptNewClient()};
+            if (newClientMessage.clientId != -1) {
+                messages.push_back(newClientMessage);
+            }
         } else {
             messages.push_back(receiveFromClient(events[i].data.fd));
         }
@@ -95,7 +98,10 @@ void NetworkLayer::registerFdWithEpoll(int fd) {
     }
 }
 
-void NetworkLayer::acceptNewClient() {
+ClientMessage NetworkLayer::acceptNewClient() {
+    ClientMessage msg;
+    msg.messageType = ClientMessageType::ACCEPT_NEW_CLIENT;
+    msg.clientId = -1;
     sockaddr_in clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
 
@@ -103,7 +109,11 @@ void NetworkLayer::acceptNewClient() {
     int clientFd = accept(serverFd, (sockaddr*)&clientAddr, &addrLen);
     if (clientFd == -1) {
         std::cerr << "Accept failed" << std::endl;
-        return;
+        return msg;
+    }
+    else {
+        setNonBlocking(clientFd);
+        registerFdWithEpoll(clientFd);
     }
 
     // Make client socket non-blocking too
@@ -116,8 +126,12 @@ void NetworkLayer::acceptNewClient() {
     int clientId = nextClientId++;
     // TODO: Store in fdToClientId and clientIdToFd maps
     fdToClientIdMap[clientFd] = clientId;
+    msg.clientId = clientId;
+    // todo set the client's name in the data field
+    msg.data = std::to_string(clientId);
 
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
+    return msg;
 }
 
 ClientMessage NetworkLayer::receiveFromClient(int fd) {
@@ -135,10 +149,12 @@ ClientMessage NetworkLayer::receiveFromClient(int fd) {
         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
         close(fd);
         fdToClientIdMap.erase(fd);
-        msg.data = std::string {""};
+        msg.messageType = ClientMessageType::CLIENT_DISCONNECT;
+        msg.data = std::to_string(msg.clientId);
         return msg;
     }
 
+    msg.messageType = ClientMessageType::CLIENT_INPUT;
     // Convert bytes to string
     buffer[bytesRead] = '\0';
     msg.data = std::string(buffer, bytesRead);
@@ -147,4 +163,10 @@ ClientMessage NetworkLayer::receiveFromClient(int fd) {
     }
     std::cout << "Received from client (fd " << fd << "): " << msg.data << std::endl;
     return msg;
+}
+
+void NetworkLayer::broadcast(std::string_view msg) {
+    for (const auto & [fd, clientId] : fdToClientIdMap) {
+        send(fd, msg.data(), msg.size(), 0);
+    }
 }
