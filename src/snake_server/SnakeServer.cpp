@@ -10,16 +10,16 @@ SnakeServer::SnakeServer(int width, int height)
 }
 
 void SnakeServer::handleInput() {
-    std::vector<ClientMessage> messages { network.pollMessages() };
+    std::vector<ProtocolMessage> messages { network.pollMessages() };
     for (auto msg : messages) {
         switch (msg.messageType) {
-            case ClientMessageType::CLIENT_CONNECT:
+            case MessageType::CLIENT_CONNECT:
                 handleAcceptNewClient(msg);
                 break;
-            case ClientMessageType::CLIENT_DISCONNECT:
+            case MessageType::CLIENT_DISCONNECT:
                 handleClientDisconnect(msg);
                 break;
-            case ClientMessageType::CLIENT_INPUT:
+            case MessageType::CLIENT_INPUT:
                 handleClientInput(msg);
                 break;
             default:
@@ -28,17 +28,17 @@ void SnakeServer::handleInput() {
     }
 }
 
-void SnakeServer::handleAcceptNewClient(const ClientMessage & msg) {
+void SnakeServer::handleAcceptNewClient(const ProtocolMessage & msg) {
     std::cout << "Adding new player " << msg.message << std::endl;
     clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.message});
 }
 
-void SnakeServer::handleClientDisconnect(const ClientMessage & msg) {
+void SnakeServer::handleClientDisconnect(const ProtocolMessage & msg) {
     std::cout << "Deleting player " << msg.message << std::endl;
     clientIdToPlayerMap.erase(msg.clientId);
 }
 
-void SnakeServer::handleClientInput(const ClientMessage & msg) {
+void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     if (msg.message == SnakeConstants::KEY_QUIT) {
         running = false;
     }

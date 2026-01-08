@@ -58,15 +58,15 @@ NetworkServer::NetworkServer(int port)
     std::cout << "Server listening on port " << port << std::endl;
 }
 
-std::vector<ClientMessage> NetworkServer::pollMessages() {
-    std::vector<ClientMessage> messages;
+std::vector<ProtocolMessage> NetworkServer::pollMessages() {
+    std::vector<ProtocolMessage> messages;
     epoll_event events[MAX_EVENTS];
     int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, 0);
     std::cout << "numEvents=" << numEvents << std::endl;
 
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
-            ClientMessage newClientMessage {acceptNewClient()};
+            ProtocolMessage newClientMessage {acceptNewClient()};
             if (newClientMessage.clientId != -1) {
                 messages.push_back(newClientMessage);
             }
@@ -98,9 +98,9 @@ void NetworkServer::registerFdWithEpoll(int fd) {
     }
 }
 
-ClientMessage NetworkServer::acceptNewClient() {
-    ClientMessage msg;
-    msg.messageType = ClientMessageType::CLIENT_CONNECT;
+ProtocolMessage NetworkServer::acceptNewClient() {
+    ProtocolMessage msg;
+    msg.messageType = MessageType::CLIENT_CONNECT;
     msg.clientId = -1;
     sockaddr_in clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
@@ -134,8 +134,8 @@ ClientMessage NetworkServer::acceptNewClient() {
     return msg;
 }
 
-ClientMessage NetworkServer::receiveFromClient(int fd) {
-    ClientMessage msg;
+ProtocolMessage NetworkServer::receiveFromClient(int fd) {
+    ProtocolMessage msg;
     msg.clientId = fdToClientIdMap.at(fd);
 
     char buffer[1024];
@@ -149,12 +149,12 @@ ClientMessage NetworkServer::receiveFromClient(int fd) {
         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
         close(fd);
         fdToClientIdMap.erase(fd);
-        msg.messageType = ClientMessageType::CLIENT_DISCONNECT;
+        msg.messageType = MessageType::CLIENT_DISCONNECT;
         msg.message = std::to_string(msg.clientId);
         return msg;
     }
 
-    msg.messageType = ClientMessageType::CLIENT_INPUT;
+    msg.messageType = MessageType::CLIENT_INPUT;
     // Convert bytes to string
     buffer[bytesRead] = '\0';
     msg.message = std::string(buffer, bytesRead);

@@ -3,19 +3,19 @@
 #include <string>
 #include "engine/Json.h"
 
-enum class ClientMessageType {
+enum class MessageType {
     CLIENT_CONNECT,
     CLIENT_DISCONNECT,
     CLIENT_INPUT
 };
 
-struct ClientMessage {
-    ClientMessageType messageType;
+struct ProtocolMessage {
+    MessageType messageType;
     int clientId;
     std::string message;
 };
 
-inline json toJson(const ClientMessage & msg) {
+inline json toJson(const ProtocolMessage & msg) {
     return {
         {"message_type", static_cast<int>(msg.messageType)},
         {"client_id", msg.clientId},
@@ -23,9 +23,9 @@ inline json toJson(const ClientMessage & msg) {
     };
 };
 
-inline ClientMessage fromJson(const json & j) {
+inline ProtocolMessage fromJson(const json & j) {
     return {
-        static_cast<ClientMessageType>(j["message_type"]),
+        static_cast<MessageType>(j["message_type"]),
         j["clientId"],
         j["message"]
     };
