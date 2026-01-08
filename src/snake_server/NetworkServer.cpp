@@ -144,7 +144,7 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
         fdToClientIdMap.erase(fd);
         msg.messageType = MessageType::CLIENT_DISCONNECT;
         msg.message = std::to_string(msg.clientId);
-        return msg;
+        return std::vector<ProtocolMessage> {msg};
     }
 
     // Convert bytes to string
@@ -153,7 +153,7 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
     std::cout << std::string(buffer, bytesRead) << std::endl;
     ProtocolMessage msg {protocol::fromString(std::string(buffer, bytesRead))};
     msg.clientId = fdToClientIdMap.at(fd);
-    return msg;
+    return std::vector<ProtocolMessage> {msg};
 }
 
 void NetworkServer::broadcast(std::string_view msg) {
