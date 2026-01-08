@@ -7,7 +7,6 @@ Engine::Engine(int width, int height)
     , running(true)
     , score(0)
     , gen(std::random_device()()) {
-    create();
 }
 
 Engine::~Engine() {
@@ -38,6 +37,7 @@ void Engine::render() {}
 void Engine::cleanup() {}
 
 void Engine::run() {
+    create();
     while (running) {
         handleInput();
         update();

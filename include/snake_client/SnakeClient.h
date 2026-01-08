@@ -6,9 +6,9 @@ class SnakeClient : public Engine {
 public:
     SnakeClient(int width, int height);
 
-    void handleInput();
-    void create();
-    void update();
-    void render();
-    void cleanup();
+    void handleInput() override;
+    void create() override;
+    void update() override;
+    void render() override;
+    void cleanup() override;
 };
