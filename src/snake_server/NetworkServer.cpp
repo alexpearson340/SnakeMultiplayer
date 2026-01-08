@@ -12,7 +12,8 @@ NetworkServer::NetworkServer(int port)
     : serverFd {-1}
     , epollFd {-1}
     , nextClientId {1}
-    , fdToClientIdMap {} {
+    , fdToClientIdMap {}
+    , fdToBufferMap {} {
 
     // Create socket
     serverFd = socket(AF_INET, SOCK_STREAM, 0);
@@ -122,6 +123,7 @@ void NetworkServer::acceptNewClient() {
     int clientId = nextClientId++;
     // TODO: Store in fdToClientId and clientIdToFd maps
     fdToClientIdMap[clientFd] = clientId;
+    fdToBufferMap[clientFd] = "";
 
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
 }
@@ -142,18 +144,26 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
         close(fd);
         fdToClientIdMap.erase(fd);
+        fdToBufferMap.erase(fd);
         msg.messageType = MessageType::CLIENT_DISCONNECT;
         msg.message = std::to_string(msg.clientId);
         return std::vector<ProtocolMessage> {msg};
     }
 
-    // Convert bytes to string
-    buffer[bytesRead] = '\0';
-    std::cout << "parsing ProtocolMessage from byte string: ";
-    std::cout << std::string(buffer, bytesRead) << std::endl;
-    ProtocolMessage msg {protocol::fromString(std::string(buffer, bytesRead))};
-    msg.clientId = fdToClientIdMap.at(fd);
-    return std::vector<ProtocolMessage> {msg};
+    return parseReceivedPacket(fd, buffer, bytesRead);
+}
+
+std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char* buffer, size_t size) {
+    std::vector<ProtocolMessage> messages {};
+    fdToBufferMap[fd] += std::string(buffer, size);
+    size_t pos;
+    while ((pos = fdToBufferMap.at(fd).find('\n')) != std::string::npos) {
+        std::string msg {fdToBufferMap.at(fd).substr(0, pos)};
+        ProtocolMessage pm {protocol::fromString(msg, fdToClientIdMap.at(fd))};
+        messages.push_back(pm);
+        fdToBufferMap.at(fd).erase(0, pos + 1);
+    }
+    return messages;
 }
 
 void NetworkServer::broadcast(std::string_view msg) {

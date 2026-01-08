@@ -38,4 +38,10 @@ namespace protocol {
         };
     }
 
+    inline ProtocolMessage fromString(const std::string_view str, int clientId) {
+        ProtocolMessage pm {fromString(str)};
+        pm.clientId = clientId;
+        return pm;
+    };
+
 };
