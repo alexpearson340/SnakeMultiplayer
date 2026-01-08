@@ -25,13 +25,11 @@ add_library(
 target_include_directories(
     engine_lib PUBLIC
     include
-    ${CURSES_INCLUDE_DIR}
 )
 
 target_link_libraries(
     engine_lib
     nlohmann_json::nlohmann_json
-    ${CURSES_LIBRARIES}
 )
 
 # CLIENT LIB
@@ -44,11 +42,13 @@ add_library(
 target_include_directories(
     snake_client_lib PUBLIC
     include
+    ${CURSES_INCLUDE_DIR}
 )
 
 target_link_libraries(
     snake_client_lib
     engine_lib
+    ${CURSES_LIBRARIES}
 )
 
 # SERVER LIB

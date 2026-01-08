@@ -5,6 +5,10 @@ SnakeClient::SnakeClient(int width, int height)
     : Engine(width, height) {
 }
 
+SnakeClient::~SnakeClient() {
+    cleanupNcurses();
+}
+
 void SnakeClient::handleInput() {
     int ch = getch();
     if (ch != ERR) {
@@ -24,7 +28,7 @@ void SnakeClient::handleInput() {
 }
 
 void SnakeClient::create() {
-    initCurses();
+    initNcurses();
 }
 
 void SnakeClient::update() {
@@ -45,11 +49,23 @@ void SnakeClient::render() {
     }
 
     mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);
-    mvprintw(height + 3, 0, "Press 'q' to quit.");
+    mvprintw(height + 3, 0, "Press 'q' to quit.\\n");
 
     refresh();
 }
 
 void SnakeClient::cleanup() {
-    cleanupCurses();
+}
+
+void SnakeClient::initNcurses() {
+    initscr();
+    cbreak();
+    noecho();
+    nodelay(stdscr, TRUE);
+    keypad(stdscr, TRUE);
+    curs_set(0);
+}
+
+void SnakeClient::cleanupNcurses() {
+    endwin();
 }

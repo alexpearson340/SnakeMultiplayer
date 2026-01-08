@@ -5,14 +5,11 @@
 class Engine {
 public:
     Engine(int width, int height);
-    ~Engine();
+    virtual ~Engine();
 
     void run();
 
 protected:
-    void initCurses();
-    void cleanupCurses();
-
     virtual void handleInput();
     virtual void create();
     virtual void update();
