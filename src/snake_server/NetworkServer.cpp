@@ -13,6 +13,7 @@ NetworkServer::NetworkServer(int port)
     , epollFd {-1}
     , nextClientId {1}
     , fdToClientIdMap {}
+    , clientIdToFdMap {}
     , fdToBufferMap {} {
 
     // Create socket
@@ -123,6 +124,7 @@ void NetworkServer::acceptNewClient() {
     int clientId = nextClientId++;
     // TODO: Store in fdToClientId and clientIdToFd maps
     fdToClientIdMap[clientFd] = clientId;
+    clientIdToFdMap[clientId] = clientFd;
     fdToBufferMap[clientFd] = "";
 
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
@@ -144,6 +146,7 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
         close(fd);
         fdToClientIdMap.erase(fd);
+        clientIdToFdMap.erase(msg.clientId);
         fdToBufferMap.erase(fd);
         msg.messageType = MessageType::CLIENT_DISCONNECT;
         msg.message = std::to_string(msg.clientId);
@@ -164,6 +167,11 @@ std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char* bu
         fdToBufferMap.at(fd).erase(0, pos + 1);
     }
     return messages;
+}
+
+void NetworkServer::sendToClient(int clientId, std::string_view msg) {
+    int fd {clientIdToFdMap.at(clientId)};
+    send(fd, msg.data(), msg.size(), 0);
 }
 
 void NetworkServer::broadcast(std::string_view msg) {

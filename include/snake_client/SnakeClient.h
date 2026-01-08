@@ -17,6 +17,10 @@ public:
 protected:
     void initNcurses();
     void cleanupNcurses();
+    void sendPlayerInput();
+    void receiveUpdates();
+    void handleServerWelcome(const ProtocolMessage &);
+    void handleGameStateMessage(const ProtocolMessage &);
 
     NetworkClient network;
     int clientId;

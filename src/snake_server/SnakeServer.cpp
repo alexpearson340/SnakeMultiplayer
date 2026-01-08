@@ -35,8 +35,25 @@ void SnakeServer::handleClientConnect(const ProtocolMessage & msg) {
 }
 
 void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
-    std::cout << "Adding new player " << msg.message << std::endl;
-    clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.message});
+    std::cout << "New client joined: " << msg.message << std::endl;
+    // todo player construction and placement
+    clientIdToPlayerMap.emplace(
+        msg.clientId,
+        Player {
+            PlayerNode{width / 2, height / 2},
+            '^',
+            msg.message,
+            1
+        }
+    );
+
+    // send a SERVER_WELCOME message back to the client, confirming that they are playing
+    ProtocolMessage serverWelcomeMessage {
+        MessageType::SERVER_WELCOME,
+        msg.clientId,
+        ""
+    };
+    network.sendToClient(msg.clientId, protocol::toString(serverWelcomeMessage));
 }
 
 void SnakeServer::handleClientDisconnect(const ProtocolMessage & msg) {
@@ -82,14 +99,34 @@ void SnakeServer::create() {
 }
 
 void SnakeServer::update() {
-    network.broadcast(buildGameStatePayload() + '\n');
+    network.broadcast(buildGameStatePayload());
 }
 
 std::string SnakeServer::buildGameStatePayload() {
-    json msg;
-    msg["players"] = json::array();
-    msg["food"] = json::array();
-    return msg.dump();
+    json gameState;
+
+    // players
+    gameState["players"] = json::array();
+    for (auto & [clientId, player] : clientIdToPlayerMap) {
+        json playerJson;
+        playerJson["client_id"] = clientId;
+        playerJson["direction"] = std::string(1, player.direction);
+        playerJson["name"] = player.name;
+        playerJson["score"] = player.score;
+        playerJson["segments"] = json::array();
+
+        // get the x and y coordinates of every body segment
+        std::vector<std::pair<int, int>> segments {};
+        player.head.getAllSegmentCoordinates(segments);
+        for (auto segment : segments) {
+            playerJson["segments"].push_back({segment.first, segment.second});
+        }
+        gameState["players"].push_back(playerJson);
+    }
+
+    // food
+    ProtocolMessage msg {MessageType::GAME_STATE, -1, gameState.dump()};
+    return protocol::toString(msg);
 }
 
 void SnakeServer::render() {

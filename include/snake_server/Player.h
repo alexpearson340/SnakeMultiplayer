@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <vector>
 
 class PlayerNode {
 public:
@@ -9,6 +10,7 @@ public:
     void moveTo(int xMove, int yMove);
     bool isInSnakeBody(int x, int y);
     void grow();
+    void getAllSegmentCoordinates(std::vector<std::pair<int, int>> &);
     int x() {return xPos;};
     int y() {return yPos;};
 
@@ -60,8 +62,16 @@ inline void PlayerNode::grow() {
     }
 }
 
+inline void PlayerNode::getAllSegmentCoordinates(std::vector<std::pair<int, int>> & segments) {
+    segments.emplace_back(xPos, yPos);
+    if (next != nullptr) {
+        next->getAllSegmentCoordinates(segments);
+    }
+}
+
 struct Player {
     PlayerNode head;
     char direction;
     std::string name;
+    int score;
 };

@@ -11,7 +11,8 @@ class NetworkServer {
 public:
     NetworkServer(int);
     std::vector<ProtocolMessage> pollMessages();
-    void broadcast(std::string_view msg);
+    void sendToClient(int, std::string_view);
+    void broadcast(std::string_view);
 
 private:
     void setNonBlocking(int fd);
@@ -25,5 +26,6 @@ private:
     int nextClientId;
 
     std::unordered_map<int, int> fdToClientIdMap;
+    std::unordered_map<int, int> clientIdToFdMap;
     std::unordered_map<int, std::string> fdToBufferMap;
 };

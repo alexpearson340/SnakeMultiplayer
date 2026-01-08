@@ -44,21 +44,17 @@ void SnakeClient::create() {
         clientId,
         "apearson"  // todo
     };
-    network.send(protocol::toString(clientJoinMessage));
+    network.sendToServer(protocol::toString(clientJoinMessage));
 }
 
 void SnakeClient::update() {
-    // todo send protocol messages
-    // network.send(std::string(1, playerDirection));
-    // send the latest player input to the server
-    ProtocolMessage playerInputMessage {
-        MessageType::CLIENT_INPUT,
-        clientId,
-        std::string(1, playerInput)
-    };
-    network.send(protocol::toString(playerInputMessage));
+    // send the latest player input to the server if successfully joined game
+    if (clientId != -1) {
+        sendPlayerInput();
+    }
 
-    // receive latest game state from server
+    // receive welcome message + latest game state from server
+    receiveUpdates();
 }
 
 void SnakeClient::render() {
@@ -95,4 +91,36 @@ void SnakeClient::initNcurses() {
 
 void SnakeClient::cleanupNcurses() {
     endwin();
+}
+
+void SnakeClient::sendPlayerInput() {
+    ProtocolMessage playerInputMessage {
+        MessageType::CLIENT_INPUT,
+        clientId,
+        std::string(1, playerInput)
+    };
+    network.sendToServer(protocol::toString(playerInputMessage));
+}
+
+void SnakeClient::receiveUpdates() {
+    std::vector<ProtocolMessage> messages { network.receiveFromServer() };
+    for (auto msg : messages) {
+        switch (msg.messageType) {
+            case MessageType::SERVER_WELCOME:
+                handleServerWelcome(msg);
+                break;
+            case MessageType::GAME_STATE:
+                handleGameStateMessage(msg);
+                break;
+            default:
+                throw std::runtime_error("Invalid MessageType");
+        }
+    }
+}
+
+void SnakeClient::handleServerWelcome(const ProtocolMessage & msg) {
+    clientId = msg.clientId;
+}
+
+void SnakeClient::handleGameStateMessage(const ProtocolMessage & msg) {
 }

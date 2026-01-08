@@ -6,10 +6,12 @@
 #include <fcntl.h>
 #include <stdexcept>
 #include <cstring>
+#include <iostream>
 
 NetworkClient::NetworkClient(const std::string& host, int port)
     : serverFd{-1}
-    , connected{false} {
+    , connected{false}
+    , messageBuffer {} {
     connectToServer(host, port);
 }
 
@@ -53,18 +55,18 @@ void NetworkClient::setNonBlocking(int fd) {
     }
 }
 
-void NetworkClient::send(std::string_view msg) {
+void NetworkClient::sendToServer(std::string_view msg) {
     if (!connected) {
         throw std::runtime_error("Not connected to server");
     }
 
-    ssize_t sent = ::send(serverFd, msg.data(), msg.size(), 0);
+    ssize_t sent = send(serverFd, msg.data(), msg.size(), 0);
     if (sent < 0) {
         throw std::runtime_error("Send failed");
     }
 }
 
-std::string NetworkClient::receive() {
+std::vector<ProtocolMessage> NetworkClient::receiveFromServer() {
     if (!connected) {
         throw std::runtime_error("Not connected to server");
     }
@@ -74,7 +76,7 @@ std::string NetworkClient::receive() {
 
     if (bytesRead < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return "";
+            return std::vector<ProtocolMessage> {};
         }
         connected = false;
         throw std::runtime_error("Receive failed");
@@ -85,7 +87,21 @@ std::string NetworkClient::receive() {
         throw std::runtime_error("Server disconnected");
     }
 
-    return std::string(buffer, bytesRead);
+    return parseReceivedPacket(buffer, bytesRead);
+}
+
+std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char* buffer, size_t size) {
+    std::vector<ProtocolMessage> messages {};
+    messageBuffer += std::string(buffer, size);
+    size_t pos;
+    while ((pos = messageBuffer.find('\n')) != std::string::npos) {
+        std::string msg {messageBuffer.substr(0, pos)};
+        std::cout << msg << std::endl;
+        ProtocolMessage pm {protocol::fromString(msg)};
+        messages.push_back(pm);
+        messageBuffer.erase(0, pos + 1);
+    }
+    return messages;
 }
 
 bool NetworkClient::isConnected() const {
