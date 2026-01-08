@@ -14,8 +14,8 @@ void SnakeServer::handleInput() {
     std::vector<ProtocolMessage> messages { network.pollMessages() };
     for (auto msg : messages) {
         switch (msg.messageType) {
-            case MessageType::CLIENT_CONNECT:
-                handleClientConnect(msg);
+            case MessageType::CLIENT_JOIN:
+                handleClientJoin(msg);
                 break;
             case MessageType::CLIENT_DISCONNECT:
                 handleClientDisconnect(msg);
@@ -29,12 +29,12 @@ void SnakeServer::handleInput() {
     }
 }
 
-void SnakeServer::handleAcceptNewClient(const ProtocolMessage & msg) {
+void SnakeServer::handleClientConnect(const ProtocolMessage & msg) {
     std::cout << "Adding new player " << msg.message << std::endl;
     clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.message});
 }
 
-void SnakeServer::handleClientConnect(const ProtocolMessage & msg) {
+void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     std::cout << "Adding new player " << msg.message << std::endl;
     clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.message});
 }

@@ -16,8 +16,8 @@ public:
 private:
     void setNonBlocking(int fd);
     void registerFdWithEpoll(int fd);
-    ProtocolMessage acceptNewClient();
-    ProtocolMessage receiveFromClient(int fd);
+    void acceptNewClient();
+    std::vector<ProtocolMessage> receiveFromClient(int fd);
 
     int serverFd;
     int epollFd;

@@ -26,7 +26,7 @@ namespace protocol {
             {"client_id", msg.clientId},
             {"message", msg.message}
         };
-        return j.dump();
+        return j.dump() + '\n';
     }
 
     inline ProtocolMessage fromString(const std::string_view str) {

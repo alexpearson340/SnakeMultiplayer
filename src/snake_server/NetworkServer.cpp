@@ -66,12 +66,12 @@ std::vector<ProtocolMessage> NetworkServer::pollMessages() {
 
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
-            ProtocolMessage newClientMessage {acceptNewClient()};
-            if (newClientMessage.clientId != -1) {
-                messages.push_back(newClientMessage);
+            acceptNewClient();
+        }
+        else {
+            for (ProtocolMessage pm : receiveFromClient(events[i].data.fd)) {
+                messages.push_back(pm);
             }
-        } else {
-            messages.push_back(receiveFromClient(events[i].data.fd));
         }
     }
     return messages;
@@ -98,18 +98,14 @@ void NetworkServer::registerFdWithEpoll(int fd) {
     }
 }
 
-ProtocolMessage NetworkServer::acceptNewClient() {
-    ProtocolMessage msg;
-    msg.messageType = MessageType::CLIENT_CONNECT;
-    msg.clientId = -1;
+void NetworkServer::acceptNewClient() {
     sockaddr_in clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
 
     // Accept the connection - get a new fd for this client
     int clientFd = accept(serverFd, (sockaddr*)&clientAddr, &addrLen);
     if (clientFd == -1) {
-        std::cerr << "Accept failed" << std::endl;
-        return msg;
+        std::cerr << "Accept new client connection failed" << std::endl;
     }
     else {
         setNonBlocking(clientFd);
@@ -126,18 +122,11 @@ ProtocolMessage NetworkServer::acceptNewClient() {
     int clientId = nextClientId++;
     // TODO: Store in fdToClientId and clientIdToFd maps
     fdToClientIdMap[clientFd] = clientId;
-    msg.clientId = clientId;
-    // todo set the client's name in the message field
-    msg.message = std::to_string(clientId);
 
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
-    return msg;
 }
 
-ProtocolMessage NetworkServer::receiveFromClient(int fd) {
-    ProtocolMessage msg;
-    msg.clientId = fdToClientIdMap.at(fd);
-
+std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
     char buffer[1024];
     int bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
@@ -146,6 +135,7 @@ ProtocolMessage NetworkServer::receiveFromClient(int fd) {
         std::cout << "Client disconnected (fd: " << fd << ")" << std::endl;
 
         ProtocolMessage msg;
+        msg.messageType = MessageType::CLIENT_DISCONNECT;
         msg.clientId = fdToClientIdMap.at(fd);
 
         // Remove from epoll
@@ -159,13 +149,11 @@ ProtocolMessage NetworkServer::receiveFromClient(int fd) {
 
     // Convert bytes to string
     buffer[bytesRead] = '\0';
-    msg.message = std::string(buffer, bytesRead);
-    if (!msg.message.empty() && msg.message.back() == '\n') {
-        msg.message.pop_back();
-    }
     std::cout << "parsing ProtocolMessage from byte string: ";
     std::cout << std::string(buffer, bytesRead) << std::endl;
-    return protocol::fromString(std::string(buffer, bytesRead));
+    ProtocolMessage msg {protocol::fromString(std::string(buffer, bytesRead))};
+    msg.clientId = fdToClientIdMap.at(fd);
+    return msg;
 }
 
 void NetworkServer::broadcast(std::string_view msg) {

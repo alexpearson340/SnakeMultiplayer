@@ -16,8 +16,8 @@ public:
     void cleanup();
 
 private:
-    void handleAcceptNewClient(const ProtocolMessage &);
     void handleClientConnect(const ProtocolMessage &);
+    void handleClientJoin(const ProtocolMessage &);
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
     std::string buildGameStatePayload();

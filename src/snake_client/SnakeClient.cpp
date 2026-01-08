@@ -37,6 +37,14 @@ void SnakeClient::handleInput() {
 
 void SnakeClient::create() {
     initNcurses();
+
+    // send a CLIENT_JOIN message to the server
+    ProtocolMessage clientJoinMessage {
+        MessageType::CLIENT_JOIN,
+        clientId,
+        "apearson"  // todo
+    };
+    network.send(protocol::toString(clientJoinMessage));
 }
 
 void SnakeClient::update() {
