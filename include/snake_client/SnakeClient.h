@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/Engine.h"
+#include "snake_client/NetworkClient.h"
 
 class SnakeClient : public Engine {
 public:
@@ -16,4 +17,7 @@ public:
 protected:
     void initNcurses();
     void cleanupNcurses();
+
+    NetworkClient network;
+    char playerDirection;
 };

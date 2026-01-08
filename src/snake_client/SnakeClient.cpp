@@ -2,7 +2,9 @@
 #include "snake_client/SnakeClient.h"
 
 SnakeClient::SnakeClient(int width, int height)
-    : Engine(width, height) {
+    : Engine(width, height)
+    , network("127.0.0.1", 8170)
+    , playerDirection('^') {
 }
 
 SnakeClient::~SnakeClient() {
@@ -16,12 +18,24 @@ void SnakeClient::handleInput() {
             running = false;
         }
         else if (ch == KEY_UP) {
+            if (playerDirection != 'v') {
+                playerDirection = '^';
+            }
         }
         else if (ch == KEY_DOWN) {
+            if (playerDirection != '^') {
+                playerDirection = 'v';
+            }
         }
         else if (ch == KEY_LEFT) {
+            if (playerDirection != '>') {
+                playerDirection = '<';
+            }
         }
         else if (ch == KEY_RIGHT) {
+            if (playerDirection != '<') {
+                playerDirection = '>';
+            }
         }
     }
     flushinp();  // Flush any remaining input
@@ -32,6 +46,9 @@ void SnakeClient::create() {
 }
 
 void SnakeClient::update() {
+    // todo send protocol messages
+    network.send(std::string(1, playerDirection));
+    network.receive();
 }
 
 void SnakeClient::render() {

@@ -39,27 +39,25 @@ void SnakeServer::handleClientDisconnect(const ClientMessage & msg) {
 }
 
 void SnakeServer::handleClientInput(const ClientMessage & msg) {
-    if (msg.data == SnakeConstants::KEY_QUIT) {
-        running = false;
-    }
-    else if (msg.data == SnakeConstants::KEY_UP) {
-        std::cout << "KEY_UP" << std::endl;
-        clientIdToPlayerMap.at(msg.clientId).direction = '^';
+    if (msg.data == SnakeConstants::KEY_UP) {
+        if (clientIdToPlayerMap.at(msg.clientId).direction != 'v') {
+            clientIdToPlayerMap.at(msg.clientId).direction = '^';
+        }
     }
     else if (msg.data == SnakeConstants::KEY_DOWN) {
-        std::cout << "KEY_DOWN" << std::endl;
-        clientIdToPlayerMap.at(msg.clientId).direction = 'v';
+        if (clientIdToPlayerMap.at(msg.clientId).direction != '^') {
+            clientIdToPlayerMap.at(msg.clientId).direction = 'v';
+        }
     }
     else if (msg.data == SnakeConstants::KEY_LEFT) {
-        std::cout << "KEY_LEFT" << std::endl;
-        clientIdToPlayerMap.at(msg.clientId).direction = '<';
+        if (clientIdToPlayerMap.at(msg.clientId).direction != '>') {
+            clientIdToPlayerMap.at(msg.clientId).direction = '<';
+        }
     }
     else if (msg.data == SnakeConstants::KEY_RIGHT) {
-        std::cout << "KEY_RIGHT" << std::endl;
-        clientIdToPlayerMap.at(msg.clientId).direction = '>';
-    }
-    else {
-        std::cout << "Unexpected receive from clientId(" << msg.clientId << "): " << msg.data << std::endl;
+        if (clientIdToPlayerMap.at(msg.clientId).direction != '<') {
+            clientIdToPlayerMap.at(msg.clientId).direction = '>';
+        }
     }
 }
 
