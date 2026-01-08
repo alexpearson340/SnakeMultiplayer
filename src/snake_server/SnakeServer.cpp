@@ -23,7 +23,7 @@ void SnakeServer::handleInput() {
                 handleClientInput(msg);
                 break;
             default:
-                throw std::runtime_error("Invalid ClientMessageType");
+                throw std::runtime_error("Invalid MessageType");
         }
     }
 }
