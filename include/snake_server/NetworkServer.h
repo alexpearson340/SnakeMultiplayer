@@ -3,20 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "engine/ClientMessage.h"
 
 inline int MAX_EVENTS {10};
-
-enum class ClientMessageType {
-    ACCEPT_NEW_CLIENT,
-    CLIENT_DISCONNECT,
-    CLIENT_INPUT
-};
-
-struct ClientMessage {
-    ClientMessageType messageType;
-    int clientId;
-    std::string data;
-};
 
 class NetworkServer {
 public:

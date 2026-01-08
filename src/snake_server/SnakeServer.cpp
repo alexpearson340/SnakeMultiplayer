@@ -13,7 +13,7 @@ void SnakeServer::handleInput() {
     std::vector<ClientMessage> messages { network.pollMessages() };
     for (auto msg : messages) {
         switch (msg.messageType) {
-            case ClientMessageType::ACCEPT_NEW_CLIENT:
+            case ClientMessageType::CLIENT_CONNECT:
                 handleAcceptNewClient(msg);
                 break;
             case ClientMessageType::CLIENT_DISCONNECT:

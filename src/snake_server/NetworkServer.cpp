@@ -100,7 +100,7 @@ void NetworkServer::registerFdWithEpoll(int fd) {
 
 ClientMessage NetworkServer::acceptNewClient() {
     ClientMessage msg;
-    msg.messageType = ClientMessageType::ACCEPT_NEW_CLIENT;
+    msg.messageType = ClientMessageType::CLIENT_CONNECT;
     msg.clientId = -1;
     sockaddr_in clientAddr;
     socklen_t addrLen = sizeof(clientAddr);
