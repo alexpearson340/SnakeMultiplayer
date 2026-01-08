@@ -29,35 +29,45 @@ void SnakeServer::handleInput() {
 }
 
 void SnakeServer::handleAcceptNewClient(const ClientMessage & msg) {
-    std::cout << "Adding new player " << msg.data << std::endl;
-    clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.data});
+    std::cout << "Adding new player " << msg.message << std::endl;
+    clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.message});
 }
 
 void SnakeServer::handleClientDisconnect(const ClientMessage & msg) {
-    std::cout << "Deleting player " << msg.data << std::endl;
+    std::cout << "Deleting player " << msg.message << std::endl;
     clientIdToPlayerMap.erase(msg.clientId);
 }
 
 void SnakeServer::handleClientInput(const ClientMessage & msg) {
-    if (msg.data == SnakeConstants::KEY_UP) {
+    if (msg.message == SnakeConstants::KEY_QUIT) {
+        running = false;
+    }
+    else if (msg.message == SnakeConstants::KEY_UP) {
+        std::cout << "KEY_UP" << std::endl;
         if (clientIdToPlayerMap.at(msg.clientId).direction != 'v') {
             clientIdToPlayerMap.at(msg.clientId).direction = '^';
         }
     }
-    else if (msg.data == SnakeConstants::KEY_DOWN) {
+    else if (msg.message == SnakeConstants::KEY_DOWN) {
+        std::cout << "KEY_DOWN" << std::endl;
         if (clientIdToPlayerMap.at(msg.clientId).direction != '^') {
             clientIdToPlayerMap.at(msg.clientId).direction = 'v';
         }
     }
-    else if (msg.data == SnakeConstants::KEY_LEFT) {
+    else if (msg.message == SnakeConstants::KEY_LEFT) {
+        std::cout << "KEY_LEFT" << std::endl;
         if (clientIdToPlayerMap.at(msg.clientId).direction != '>') {
             clientIdToPlayerMap.at(msg.clientId).direction = '<';
         }
     }
-    else if (msg.data == SnakeConstants::KEY_RIGHT) {
+    else if (msg.message == SnakeConstants::KEY_RIGHT) {
+        std::cout << "KEY_RIGHT" << std::endl;
         if (clientIdToPlayerMap.at(msg.clientId).direction != '<') {
             clientIdToPlayerMap.at(msg.clientId).direction = '>';
         }
+    }
+    else {
+        std::cout << "Unexpected receive from clientId(" << msg.clientId << "): " << msg.message << std::endl;
     }
 }
 

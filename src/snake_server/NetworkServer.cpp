@@ -127,8 +127,8 @@ ClientMessage NetworkServer::acceptNewClient() {
     // TODO: Store in fdToClientId and clientIdToFd maps
     fdToClientIdMap[clientFd] = clientId;
     msg.clientId = clientId;
-    // todo set the client's name in the data field
-    msg.data = std::to_string(clientId);
+    // todo set the client's name in the message field
+    msg.message = std::to_string(clientId);
 
     std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
     return msg;
@@ -150,18 +150,18 @@ ClientMessage NetworkServer::receiveFromClient(int fd) {
         close(fd);
         fdToClientIdMap.erase(fd);
         msg.messageType = ClientMessageType::CLIENT_DISCONNECT;
-        msg.data = std::to_string(msg.clientId);
+        msg.message = std::to_string(msg.clientId);
         return msg;
     }
 
     msg.messageType = ClientMessageType::CLIENT_INPUT;
     // Convert bytes to string
     buffer[bytesRead] = '\0';
-    msg.data = std::string(buffer, bytesRead);
-    if (!msg.data.empty() && msg.data.back() == '\n') {
-        msg.data.pop_back();
+    msg.message = std::string(buffer, bytesRead);
+    if (!msg.message.empty() && msg.message.back() == '\n') {
+        msg.message.pop_back();
     }
-    std::cout << "Received from client (fd " << fd << "): " << msg.data << std::endl;
+    std::cout << "Received from client (fd " << fd << "): " << msg.message << std::endl;
     return msg;
 }
 
