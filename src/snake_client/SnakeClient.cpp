@@ -1,10 +1,12 @@
 #include <ncurses.h>
+#include "engine/ProtocolMessage.h"
 #include "snake_client/SnakeClient.h"
 
 SnakeClient::SnakeClient(int width, int height)
     : Engine(width, height)
     , network("127.0.0.1", 8170)
-    , playerDirection('^') {
+    , clientId(-1)
+    , playerInput('^') {
 }
 
 SnakeClient::~SnakeClient() {
@@ -18,24 +20,16 @@ void SnakeClient::handleInput() {
             running = false;
         }
         else if (ch == KEY_UP) {
-            if (playerDirection != 'v') {
-                playerDirection = '^';
-            }
+            playerInput = '^';
         }
         else if (ch == KEY_DOWN) {
-            if (playerDirection != '^') {
-                playerDirection = 'v';
-            }
+            playerInput = 'v';
         }
         else if (ch == KEY_LEFT) {
-            if (playerDirection != '>') {
-                playerDirection = '<';
-            }
+            playerInput = '<';
         }
         else if (ch == KEY_RIGHT) {
-            if (playerDirection != '<') {
-                playerDirection = '>';
-            }
+            playerInput = '>';
         }
     }
     flushinp();  // Flush any remaining input
@@ -47,8 +41,16 @@ void SnakeClient::create() {
 
 void SnakeClient::update() {
     // todo send protocol messages
-    network.send(std::string(1, playerDirection));
-    network.receive();
+    // network.send(std::string(1, playerDirection));
+    // send the latest player input to the server
+    ProtocolMessage playerInputMessage {
+        MessageType::CLIENT_INPUT,
+        clientId,
+        std::string(1, playerInput)
+    };
+    network.send(protocol::toString(playerInputMessage));
+
+    // receive latest game state from server
 }
 
 void SnakeClient::render() {

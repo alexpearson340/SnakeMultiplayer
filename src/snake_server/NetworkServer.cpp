@@ -145,6 +145,9 @@ ProtocolMessage NetworkServer::receiveFromClient(int fd) {
         // Connection closed or error
         std::cout << "Client disconnected (fd: " << fd << ")" << std::endl;
 
+        ProtocolMessage msg;
+        msg.clientId = fdToClientIdMap.at(fd);
+
         // Remove from epoll
         epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
         close(fd);
@@ -154,15 +157,15 @@ ProtocolMessage NetworkServer::receiveFromClient(int fd) {
         return msg;
     }
 
-    msg.messageType = MessageType::CLIENT_INPUT;
     // Convert bytes to string
     buffer[bytesRead] = '\0';
     msg.message = std::string(buffer, bytesRead);
     if (!msg.message.empty() && msg.message.back() == '\n') {
         msg.message.pop_back();
     }
-    std::cout << "Received from client (fd " << fd << "): " << msg.message << std::endl;
-    return msg;
+    std::cout << "parsing ProtocolMessage from byte string: ";
+    std::cout << std::string(buffer, bytesRead) << std::endl;
+    return protocol::fromString(std::string(buffer, bytesRead));
 }
 
 void NetworkServer::broadcast(std::string_view msg) {

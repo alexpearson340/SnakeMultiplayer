@@ -19,5 +19,6 @@ protected:
     void cleanupNcurses();
 
     NetworkClient network;
-    char playerDirection;
+    int clientId;
+    char playerInput;
 };
