@@ -142,7 +142,10 @@ void SnakeClient::renderArena() {
     for (int y = 0; y <= height + 1; y++) {
         for (int x = 0; x <= width + 1; x++) {
             if (x == 0 || y == 0 || x == width + 1 || y == height + 1) {
-                mvaddch(y, x, '.');  // boundary
+                renderCharToScreen(x, y, '.');  // boundary
+            }
+            else {
+                renderCharToScreen(x, y, ' ');  // empty space
             }
         }
     }
@@ -150,16 +153,16 @@ void SnakeClient::renderArena() {
 
 void SnakeClient::renderPlayers() {
     for (auto & p : gameState.players) {
-        mvaddch(p.segments[0].second, p.segments[0].first, p.direction);
+        renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction);
         for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
-            mvaddch(it->second, it->first, 'c');
+            renderCharToScreen(it->first, it->second, 'c');
         }
     }
 }
 
 void SnakeClient::renderFood() {
     for (auto & f : gameState.food) {
-        mvaddch(f.y, f.x, f.icon);
+        renderCharToScreen(f.x, f.y, f.icon);
     }
 }
 
@@ -175,4 +178,8 @@ void SnakeClient::renderScore() {
     for (auto & [name, score] : scores) {
         mvprintw(row++, 0, "%-11s %4d", name.c_str(), score);
     }
+}
+
+void SnakeClient::renderCharToScreen(const int x, const int y, const char & character) {
+    mvaddch(y, x * CLIENT_HORIZONTAL_SCALING, character);
 }

@@ -20,6 +20,7 @@ private:
     void renderPlayers();
     void renderFood();
     void renderScore();
+    void renderCharToScreen(const int, const int, const char &);
 
     void initNcurses();
     void cleanupNcurses();
