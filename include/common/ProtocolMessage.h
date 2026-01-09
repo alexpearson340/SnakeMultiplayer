@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "engine/Json.h"
+#include "common/Json.h"
 
 enum class MessageType {
     CLIENT_CONNECT,        // first contact between client and server

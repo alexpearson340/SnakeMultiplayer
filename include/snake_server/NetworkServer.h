@@ -3,9 +3,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "engine/ProtocolMessage.h"
-
-inline int MAX_EVENTS {10};
+#include "common/ProtocolMessage.h"
 
 class NetworkServer {
 public:

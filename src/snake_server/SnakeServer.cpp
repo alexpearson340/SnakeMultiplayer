@@ -1,30 +1,56 @@
 #include <iostream>
 #include <stdexcept>
+#include <chrono>
 #include "snake_server/Constants.h"
-#include "engine/Json.h"
+#include "common/Json.h"
 #include "snake_server/SnakeServer.h"
 
 SnakeServer::SnakeServer(int width, int height)
-    : Engine(width, height)
+    : width {width}
+    , height {height}
+    , running {true}
+    , gen {std::random_device{}()}
     , network {8170}
     , clientIdToPlayerMap {} {
 }
 
-void SnakeServer::handleInput() {
-    std::vector<ProtocolMessage> messages { network.pollMessages() };
-    for (auto msg : messages) {
-        switch (msg.messageType) {
-            case MessageType::CLIENT_JOIN:
-                handleClientJoin(msg);
-                break;
-            case MessageType::CLIENT_DISCONNECT:
-                handleClientDisconnect(msg);
-                break;
-            case MessageType::CLIENT_INPUT:
-                handleClientInput(msg);
-                break;
-            default:
-                throw std::runtime_error("Invalid MessageType");
+void SnakeServer::run() {
+    auto lastGameTick = std::chrono::steady_clock::now();
+
+    while (running) {
+        std::vector<ProtocolMessage> messages { network.pollMessages() };
+        bool stateChanged = false;
+
+        for (auto msg : messages) {
+            switch (msg.messageType) {
+                case MessageType::CLIENT_JOIN:
+                    handleClientJoin(msg);
+                    stateChanged = true;
+                    break;
+                case MessageType::CLIENT_INPUT:
+                    handleClientInput(msg);
+                    stateChanged = true;
+                    break;
+                case MessageType::CLIENT_DISCONNECT:
+                    handleClientDisconnect(msg);
+                    stateChanged = true;
+                    break;
+                default:
+                    throw std::runtime_error("Invalid MessageType");
+            }
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastGameTick);
+
+        if (elapsed.count() >= gameTickMs) {
+            moveSnakes();
+            stateChanged = true;
+            lastGameTick = now;
+        }
+
+        if (stateChanged) {
+            broadcastGameState();
         }
     }
 }
@@ -91,10 +117,10 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     }
 }
 
-void SnakeServer::create() {
+void SnakeServer::moveSnakes() {
 }
 
-void SnakeServer::update() {
+void SnakeServer::broadcastGameState() {
     network.broadcast(buildGameStatePayload());
 }
 
@@ -123,10 +149,4 @@ std::string SnakeServer::buildGameStatePayload() {
     // food
     ProtocolMessage msg {MessageType::GAME_STATE, -1, gameState.dump()};
     return protocol::toString(msg);
-}
-
-void SnakeServer::render() {
-}
-
-void SnakeServer::cleanup() {
 }

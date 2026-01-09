@@ -16,22 +16,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
-# ENGINE LIB
-add_library(
-    engine_lib STATIC
-    src/engine/Engine.cpp
-)
-
-target_include_directories(
-    engine_lib PUBLIC
-    include
-)
-
-target_link_libraries(
-    engine_lib
-    nlohmann_json::nlohmann_json
-)
-
 # CLIENT LIB
 add_library(
     snake_client_lib STATIC
@@ -47,7 +31,7 @@ target_include_directories(
 
 target_link_libraries(
     snake_client_lib
-    engine_lib
+    nlohmann_json::nlohmann_json
     ${CURSES_LIBRARIES}
 )
 
@@ -65,7 +49,7 @@ target_include_directories(
 
 target_link_libraries(
     snake_server_lib
-    engine_lib
+    nlohmann_json::nlohmann_json
 )
 
 # CLIENT EXECUTABLE

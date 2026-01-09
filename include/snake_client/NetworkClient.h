@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "engine/ProtocolMessage.h"
+#include "common/ProtocolMessage.h"
 
 class NetworkClient {
 public:

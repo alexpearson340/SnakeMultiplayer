@@ -1,3 +1,4 @@
+#include "snake_server/Constants.h"
 #include "snake_server/NetworkServer.h"
 #include <sys/epoll.h>
 #include <sys/socket.h>
@@ -63,7 +64,7 @@ NetworkServer::NetworkServer(int port)
 std::vector<ProtocolMessage> NetworkServer::pollMessages() {
     std::vector<ProtocolMessage> messages;
     epoll_event events[MAX_EVENTS];
-    int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, 0);
+    int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, EPOLL_BLOCKING_TIMEOUT);
     std::cout << "numEvents=" << numEvents << std::endl;
 
     for (int i = 0; i < numEvents; i++) {

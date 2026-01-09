@@ -1,31 +1,33 @@
 #pragma once
 
-#include "engine/Engine.h"
 #include "snake_client/GameState.h"
 #include "snake_client/NetworkClient.h"
 
-class SnakeClient : public Engine {
+class SnakeClient {
 public:
     SnakeClient(int width, int height);
     ~SnakeClient();
+    void run();
 
-    void handleInput() override;
-    void create() override;
-    void update() override;
-    void render() override;
-    void cleanup() override;
-
-protected:
-    void initNcurses();
-    void cleanupNcurses();
+private:
+    void handleInput();
     void sendPlayerInput();
     void receiveUpdates();
     void handleServerWelcome(const ProtocolMessage &);
     void handleGameStateMessage(const ProtocolMessage &);
+    void render();
     void renderArena();
     void renderPlayers();
     void renderFood();
     void renderScore();
+
+    void initNcurses();
+    void cleanupNcurses();
+
+    int width;
+    int height;
+    bool running;
+    int score;
 
     NetworkClient network;
     int clientId;

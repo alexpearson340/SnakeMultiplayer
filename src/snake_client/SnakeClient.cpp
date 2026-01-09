@@ -1,9 +1,14 @@
 #include <ncurses.h>
-#include "engine/ProtocolMessage.h"
+#include <chrono>
+#include <thread>
+#include "common/ProtocolMessage.h"
 #include "snake_client/SnakeClient.h"
 
 SnakeClient::SnakeClient(int width, int height)
-    : Engine(width, height)
+    : width {width}
+    , height {height}
+    , running {true}
+    , score {0}
     , network("127.0.0.1", 8170)
     , clientId(-1)
     , playerInput('^')
@@ -36,7 +41,7 @@ void SnakeClient::handleInput() {
     flushinp();  // Flush any remaining input
 }
 
-void SnakeClient::create() {
+void SnakeClient::run() {
     initNcurses();
 
     // send a CLIENT_JOIN message to the server
@@ -46,16 +51,19 @@ void SnakeClient::create() {
         "apearson"  // todo
     };
     network.sendToServer(protocol::toString(clientJoinMessage));
-}
 
-void SnakeClient::update() {
-    // send the latest player input to the server if successfully joined game
-    if (clientId != -1) {
-        sendPlayerInput();
+    while (running) {
+        handleInput();
+
+        if (clientId != -1) {
+            sendPlayerInput();
+        }
+
+        receiveUpdates();
+        render();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
-
-    // receive welcome message + latest game state from server
-    receiveUpdates();
 }
 
 void SnakeClient::render() {
