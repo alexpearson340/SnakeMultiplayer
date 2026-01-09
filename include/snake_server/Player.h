@@ -59,6 +59,7 @@ inline void PlayerNode::getSegments(std::vector<std::pair<int, int>> & segments)
 struct Player {
     PlayerNode head;
     char direction;
+    char nextDirection;
     std::string name;
     int score;
 };

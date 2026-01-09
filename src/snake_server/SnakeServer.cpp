@@ -75,6 +75,7 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
         Player {
             PlayerNode{width / 2, height / 2},
             '^',
+            '^',
             msg.message,
             1
         }
@@ -106,22 +107,22 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     }
     else if (msg.message == SnakeConstants::KEY_UP) {
         if (player.direction != 'v') {
-            player.direction = '^';
+            player.nextDirection = '^';
         }
     }
     else if (msg.message == SnakeConstants::KEY_DOWN) {
         if (player.direction != '^') {
-            player.direction = 'v';
+            player.nextDirection = 'v';
         }
     }
     else if (msg.message == SnakeConstants::KEY_LEFT) {
         if (player.direction != '>') {
-            player.direction = '<';
+            player.nextDirection = '<';
         }
     }
     else if (msg.message == SnakeConstants::KEY_RIGHT) {
         if (player.direction != '<') {
-            player.direction = '>';
+            player.nextDirection = '>';
         }
     }
     else {
@@ -133,6 +134,7 @@ void SnakeServer::moveSnakes() {
     occupiedCellsBodies.clear();
     occupiedCellsHeads.clear();
     for (auto & [clientId, player] : clientIdToPlayerMap) {
+        player.direction = player.nextDirection;
         switch (player.direction) {
             case '^':
                 player.head.move(0, -1);
@@ -209,6 +211,7 @@ void SnakeServer::destroyPlayers(std::vector<int> & clientIds) {
 
 void SnakeServer::feedPlayer(std::pair<int, int> & playerCell, const int clientId) {
     clientIdToPlayerMap.at(clientId).head.grow();
+    clientIdToPlayerMap.at(clientId).score++;
     foodMap.erase(playerCell);
     placeFood();
 }
