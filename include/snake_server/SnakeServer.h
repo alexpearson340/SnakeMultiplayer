@@ -1,7 +1,9 @@
 #pragma once
 
 #include <unordered_map>
+#include <unordered_set>
 #include <random>
+#include "common/Hash.h"
 #include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
 
@@ -17,6 +19,9 @@ private:
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
     void moveSnakes();
+    void updateOccupiedCells(const int);
+    void checkCollisions();
+    void destroyPlayers(std::vector<int> &);
     void broadcastGameState();
     std::string buildGameStatePayload();
 
@@ -28,5 +33,7 @@ private:
 
     NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;
+    std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsBodies;
+    std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsHeads;
 };
 

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <chrono>
-#include "snake_server/Constants.h"
+#include "common/Constants.h"
 #include "common/Json.h"
 #include "snake_server/SnakeServer.h"
 
@@ -12,7 +12,9 @@ SnakeServer::SnakeServer(int width, int height)
     , gameTickMs{GAME_TICKS_MS}
     , gen {std::random_device{}()}
     , network {8170}
-    , clientIdToPlayerMap {} {
+    , clientIdToPlayerMap {}
+    , occupiedCellsBodies {}
+    , occupiedCellsHeads {} {
 }
 
 void SnakeServer::run() {
@@ -46,6 +48,7 @@ void SnakeServer::run() {
 
         if (elapsed.count() >= gameTickMs) {
             moveSnakes();
+            checkCollisions();
             stateChanged = true;
             lastGameTick = now;
         }
@@ -89,6 +92,11 @@ void SnakeServer::handleClientDisconnect(const ProtocolMessage & msg) {
 }
 
 void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
+    if (!clientIdToPlayerMap.contains(msg.clientId)) {
+        std::cout << "Ignoring input from unknown clientId: " << msg.clientId << std::endl;
+        return;
+    }
+
     Player & player {clientIdToPlayerMap.at(msg.clientId)};
     if (msg.message == SnakeConstants::KEY_QUIT) {
         running = false;
@@ -119,6 +127,78 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
 }
 
 void SnakeServer::moveSnakes() {
+    occupiedCellsBodies.clear();
+    occupiedCellsHeads.clear();
+    for (auto & [clientId, player] : clientIdToPlayerMap) {
+        switch (player.direction) {
+            case '^':
+                player.head.move(0, -1);
+                break;
+            case 'v':
+                player.head.move(0, 1);
+                break;
+            case '<':
+                player.head.move(-1, 0);
+                break;
+            case '>':
+                player.head.move(1, 0);
+                break;
+            default:
+                throw std::runtime_error("Invalid direction: " + std::string(1, player.direction));
+        }
+        updateOccupiedCells(clientId);
+    }
+}
+
+void SnakeServer::updateOccupiedCells(const int clientId) {
+    std::vector<std::pair<int, int>> segments {};
+    clientIdToPlayerMap.at(clientId).head.getAllSegmentCoordinates(segments);
+    occupiedCellsHeads[segments[0]].insert(clientId);
+    for (auto it = segments.begin() + 1; it < segments.end(); it++) {
+        occupiedCellsBodies[*it].insert(clientId);
+    }
+}
+
+void SnakeServer::checkCollisions() {
+    std::vector<int> clientIdsToDestroy;
+    for (auto & [clientId, player] : clientIdToPlayerMap) {
+        std::pair<int, int> playerHead {player.head.x(), player.head.y()};
+
+        // collision with arena boundary
+        if (player.head.y() == 0) {
+            clientIdsToDestroy.push_back(clientId);
+        }
+        else if (player.head.y() == height) {
+            clientIdsToDestroy.push_back(clientId);
+        }
+        else if (player.head.x() == 0) {
+            clientIdsToDestroy.push_back(clientId);
+        }
+        else if (player.head.x() == width) {
+            clientIdsToDestroy.push_back(clientId);
+        }
+        // collision with a snake body segment
+        else if (occupiedCellsBodies.contains(playerHead)) {
+            clientIdsToDestroy.push_back(clientId);
+        }
+        // // collision with a different snake's head
+        else if (occupiedCellsHeads.contains(playerHead)) {
+            if (occupiedCellsHeads.at(playerHead).size() > 1) {
+                clientIdsToDestroy.push_back(clientId);
+            }
+        }
+    }
+    if (!clientIdsToDestroy.empty()) {
+        destroyPlayers(clientIdsToDestroy);
+    }
+}
+
+void SnakeServer::destroyPlayers(std::vector<int> & clientIds) {
+    for (auto & id : clientIds) {
+        std::cout << "destroying player " << id << std::endl;
+        clientIdToPlayerMap.erase(id);
+        std::cout << "destroyed player " << id << std::endl;
+    }
 }
 
 void SnakeServer::broadcastGameState() {

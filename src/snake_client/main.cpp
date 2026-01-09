@@ -1,7 +1,8 @@
+#include "common/Constants.h"
 #include "snake_client/SnakeClient.h"
 
 int main() {
-    SnakeClient client {40, 20};
+    SnakeClient client {ARENA_WIDTH, ARENA_HEIGHT};
     client.run();
     return 0;
 }

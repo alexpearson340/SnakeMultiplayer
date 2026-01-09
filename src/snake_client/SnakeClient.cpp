@@ -11,7 +11,7 @@ SnakeClient::SnakeClient(int width, int height)
     , score {0}
     , network("127.0.0.1", 8170)
     , clientId(-1)
-    , playerInput('^')
+    , playerInput('\0')
     , gameState{} {
 }
 

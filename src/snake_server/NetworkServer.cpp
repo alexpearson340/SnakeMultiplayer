@@ -1,4 +1,4 @@
-#include "snake_server/Constants.h"
+#include "common/Constants.h"
 #include "snake_server/NetworkServer.h"
 #include <sys/epoll.h>
 #include <sys/socket.h>
