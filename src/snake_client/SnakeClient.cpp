@@ -6,7 +6,8 @@ SnakeClient::SnakeClient(int width, int height)
     : Engine(width, height)
     , network("127.0.0.1", 8170)
     , clientId(-1)
-    , playerInput('^') {
+    , playerInput('^')
+    , gameState{} {
 }
 
 SnakeClient::~SnakeClient() {
@@ -59,17 +60,8 @@ void SnakeClient::update() {
 
 void SnakeClient::render() {
     clear();
-
-    for (int y = 0; y <= height + 1; y++) {
-        for (int x = 0; x <= width + 1; x++) {
-            if (x == 0 || y == 0 || x == width + 1 || y == height + 1) {
-                mvaddch(y, x, '.');  // boundary
-            }
-            else {
-                mvaddch(y, x, ' ');  // empty space
-            }
-        }
-    }
+    renderArena();
+    renderPlayers();
 
     mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);
     mvprintw(height + 3, 0, "Press 'q' to quit.\\n");
@@ -104,17 +96,26 @@ void SnakeClient::sendPlayerInput() {
 
 void SnakeClient::receiveUpdates() {
     std::vector<ProtocolMessage> messages { network.receiveFromServer() };
-    for (auto msg : messages) {
+    ProtocolMessage * latestGameState {nullptr};
+
+    for (auto & msg : messages) {
         switch (msg.messageType) {
             case MessageType::SERVER_WELCOME:
                 handleServerWelcome(msg);
                 break;
             case MessageType::GAME_STATE:
-                handleGameStateMessage(msg);
+                latestGameState = &msg;
                 break;
             default:
                 throw std::runtime_error("Invalid MessageType");
         }
+    }
+
+    // We only process the latest GAME_STATE message, to avoid
+    // getting behind on the client side when all we care about
+    // is the latest GAME_STATE anyway
+    if (latestGameState != nullptr) {
+        handleGameStateMessage(*latestGameState);
     }
 }
 
@@ -123,4 +124,30 @@ void SnakeClient::handleServerWelcome(const ProtocolMessage & msg) {
 }
 
 void SnakeClient::handleGameStateMessage(const ProtocolMessage & msg) {
+    gameState = client::parseGameState(msg.message);
+}
+
+void SnakeClient::renderArena() {
+    for (int y = 0; y <= height + 1; y++) {
+        for (int x = 0; x <= width + 1; x++) {
+            if (x == 0 || y == 0 || x == width + 1 || y == height + 1) {
+                mvaddch(y, x, '.');  // boundary
+            }
+        }
+    }
+}
+
+void SnakeClient::renderPlayers() {
+    for (auto & p : gameState.players) {
+        mvaddch(p.segments[0].second, p.segments[0].first, p.direction);
+        for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
+            mvaddch(it->second, it->first, '.');
+        }
+    }
+}
+
+void SnakeClient::renderFood() {
+}
+
+void SnakeClient::renderScore() {
 }

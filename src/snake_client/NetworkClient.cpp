@@ -96,7 +96,6 @@ std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char* buffer, si
     size_t pos;
     while ((pos = messageBuffer.find('\n')) != std::string::npos) {
         std::string msg {messageBuffer.substr(0, pos)};
-        std::cout << msg << std::endl;
         ProtocolMessage pm {protocol::fromString(msg)};
         messages.push_back(pm);
         messageBuffer.erase(0, pos + 1);

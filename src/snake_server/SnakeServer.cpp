@@ -67,25 +67,21 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
         running = false;
     }
     else if (msg.message == SnakeConstants::KEY_UP) {
-        std::cout << "KEY_UP" << std::endl;
         if (player.direction != 'v') {
             player.direction = '^';
         }
     }
     else if (msg.message == SnakeConstants::KEY_DOWN) {
-        std::cout << "KEY_DOWN" << std::endl;
         if (player.direction != '^') {
             player.direction = 'v';
         }
     }
     else if (msg.message == SnakeConstants::KEY_LEFT) {
-        std::cout << "KEY_LEFT" << std::endl;
         if (player.direction != '>') {
             player.direction = '<';
         }
     }
     else if (msg.message == SnakeConstants::KEY_RIGHT) {
-        std::cout << "KEY_RIGHT" << std::endl;
         if (player.direction != '<') {
             player.direction = '>';
         }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "engine/Engine.h"
+#include "snake_client/GameState.h"
 #include "snake_client/NetworkClient.h"
 
 class SnakeClient : public Engine {
@@ -21,8 +22,13 @@ protected:
     void receiveUpdates();
     void handleServerWelcome(const ProtocolMessage &);
     void handleGameStateMessage(const ProtocolMessage &);
+    void renderArena();
+    void renderPlayers();
+    void renderFood();
+    void renderScore();
 
     NetworkClient network;
     int clientId;
     char playerInput;
+    client::GameState gameState;
 };
