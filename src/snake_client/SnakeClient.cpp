@@ -20,6 +20,7 @@ SnakeClient::~SnakeClient() {
 }
 
 void SnakeClient::handleInput() {
+    // todo client side 180 protection
     int ch = getch();
     if (ch != ERR) {
         if (ch == 'q' || ch == 'Q') {
@@ -70,6 +71,8 @@ void SnakeClient::render() {
     clear();
     renderArena();
     renderPlayers();
+    renderFood();
+    renderScore();
 
     mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);
     mvprintw(height + 3, 0, "Press 'q' to quit.\\n");
@@ -149,12 +152,15 @@ void SnakeClient::renderPlayers() {
     for (auto & p : gameState.players) {
         mvaddch(p.segments[0].second, p.segments[0].first, p.direction);
         for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
-            mvaddch(it->second, it->first, '.');
+            mvaddch(it->second, it->first, 'c');
         }
     }
 }
 
 void SnakeClient::renderFood() {
+    for (auto & f : gameState.food) {
+        mvaddch(f.y, f.x, f.icon);
+    }
 }
 
 void SnakeClient::renderScore() {

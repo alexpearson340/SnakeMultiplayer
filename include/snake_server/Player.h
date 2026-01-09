@@ -8,9 +8,8 @@ public:
     PlayerNode(int x, int y);
     void move(int xMove, int yMove);
     void moveTo(int xMove, int yMove);
-    bool isInSnakeBody(int x, int y);
     void grow();
-    void getAllSegmentCoordinates(std::vector<std::pair<int, int>> &);
+    void getSegments(std::vector<std::pair<int, int>> &);
     int x() {return xPos;};
     int y() {return yPos;};
 
@@ -41,18 +40,6 @@ inline void PlayerNode::moveTo(int xMove, int yMove) {
     prevY = yPos;
 }
 
-inline bool PlayerNode::isInSnakeBody(int x, int y) {
-    PlayerNode * nextBodyPart { next.get() };
-
-    while (nextBodyPart != nullptr) {
-        if (nextBodyPart->x() == x && nextBodyPart->y() == y) {
-            return true;
-        }
-        nextBodyPart = nextBodyPart->next.get();
-    }
-    return false;
-}
-
 inline void PlayerNode::grow() {
     if (next == nullptr) {
         next = std::make_unique<PlayerNode>(prevX, prevY);
@@ -62,10 +49,10 @@ inline void PlayerNode::grow() {
     }
 }
 
-inline void PlayerNode::getAllSegmentCoordinates(std::vector<std::pair<int, int>> & segments) {
+inline void PlayerNode::getSegments(std::vector<std::pair<int, int>> & segments) {
     segments.emplace_back(xPos, yPos);
     if (next != nullptr) {
-        next->getAllSegmentCoordinates(segments);
+        next->getSegments(segments);
     }
 }
 
@@ -74,4 +61,10 @@ struct Player {
     char direction;
     std::string name;
     int score;
+};
+
+struct Food {
+    int x;
+    int y;
+    char icon;
 };

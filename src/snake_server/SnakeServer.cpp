@@ -14,11 +14,14 @@ SnakeServer::SnakeServer(int width, int height)
     , network {8170}
     , clientIdToPlayerMap {}
     , occupiedCellsBodies {}
-    , occupiedCellsHeads {} {
+    , occupiedCellsHeads {}
+    , foodMap {} {
 }
 
 void SnakeServer::run() {
     auto lastGameTick = std::chrono::steady_clock::now();
+
+    placeFood();
 
     while (true) {
         std::vector<ProtocolMessage> messages { network.pollMessages() };
@@ -152,7 +155,7 @@ void SnakeServer::moveSnakes() {
 
 void SnakeServer::updateOccupiedCells(const int clientId) {
     std::vector<std::pair<int, int>> segments {};
-    clientIdToPlayerMap.at(clientId).head.getAllSegmentCoordinates(segments);
+    clientIdToPlayerMap.at(clientId).head.getSegments(segments);
     occupiedCellsHeads[segments[0]].insert(clientId);
     for (auto it = segments.begin() + 1; it < segments.end(); it++) {
         occupiedCellsBodies[*it].insert(clientId);
@@ -181,11 +184,14 @@ void SnakeServer::checkCollisions() {
         else if (occupiedCellsBodies.contains(playerHead)) {
             clientIdsToDestroy.push_back(clientId);
         }
-        // // collision with a different snake's head
-        else if (occupiedCellsHeads.contains(playerHead)) {
-            if (occupiedCellsHeads.at(playerHead).size() > 1) {
-                clientIdsToDestroy.push_back(clientId);
-            }
+        // collision with a different snake's head
+        else if (occupiedCellsHeads.contains(playerHead) && occupiedCellsHeads.at(playerHead).size() > 1) {
+            clientIdsToDestroy.push_back(clientId);
+        }
+
+        // get food
+        else if (foodMap.contains(playerHead)) {
+            feedPlayer(playerHead, clientId);
         }
     }
     if (!clientIdsToDestroy.empty()) {
@@ -199,6 +205,21 @@ void SnakeServer::destroyPlayers(std::vector<int> & clientIds) {
         clientIdToPlayerMap.erase(id);
         std::cout << "destroyed player " << id << std::endl;
     }
+}
+
+void SnakeServer::feedPlayer(std::pair<int, int> & playerCell, const int clientId) {
+    clientIdToPlayerMap.at(clientId).head.grow();
+    foodMap.erase(playerCell);
+    placeFood();
+}
+
+void SnakeServer::placeFood() {
+    std::uniform_int_distribution<> distX(1, width - 1);
+    std::uniform_int_distribution<> distY(1, height - 1);
+    int x {distX(gen)};
+    int y {distY(gen)};
+    std::cout << "Placing food at (" << x << ", " << y << ")" << std::endl;
+    foodMap[std::pair<int, int> {x, y}] = Food {x, y, '@'};
 }
 
 void SnakeServer::broadcastGameState() {
@@ -220,7 +241,7 @@ std::string SnakeServer::buildGameStatePayload() {
 
         // get the x and y coordinates of every body segment
         std::vector<std::pair<int, int>> segments {};
-        player.head.getAllSegmentCoordinates(segments);
+        player.head.getSegments(segments);
         for (auto segment : segments) {
             playerJson["segments"].push_back({segment.first, segment.second});
         }
@@ -228,6 +249,15 @@ std::string SnakeServer::buildGameStatePayload() {
     }
 
     // food
+    gameState["food"] = json::array();
+    for (auto & [coords, food] : foodMap) {
+        json foodJson;
+        foodJson["x"] = food.x;
+        foodJson["y"] = food.y;
+        foodJson["icon"] = std::string(1, food.icon);
+        gameState["food"].push_back(foodJson);
+    }
+
     ProtocolMessage msg {MessageType::GAME_STATE, -1, gameState.dump()};
     return protocol::toString(msg);
 }

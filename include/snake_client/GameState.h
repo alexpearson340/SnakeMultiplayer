@@ -18,6 +18,7 @@ namespace client {
     struct FoodData {
         int x;
         int y;
+        char icon;
     };
 
     struct GameState {
@@ -46,6 +47,13 @@ namespace client {
 
         // food
         std::vector<FoodData> food {};
+        for (auto & f: j["food"]) {
+            food.push_back({
+                f["x"],
+                f["y"],
+                f["icon"].get<std::string>()[0],
+            });
+        }
 
         return {players, food};
     }

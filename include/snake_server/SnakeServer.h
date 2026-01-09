@@ -22,6 +22,8 @@ private:
     void updateOccupiedCells(const int);
     void checkCollisions();
     void destroyPlayers(std::vector<int> &);
+    void feedPlayer(std::pair<int, int> & playerCell, const int);
+    void placeFood();
     void broadcastGameState();
     std::string buildGameStatePayload();
 
@@ -35,5 +37,6 @@ private:
     std::unordered_map<int, Player> clientIdToPlayerMap;
     std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsBodies;
     std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsHeads;
+    std::unordered_map<std::pair<int, int>, Food, PairHash> foodMap;
 };
 
