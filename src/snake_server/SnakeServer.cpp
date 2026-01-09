@@ -11,7 +11,7 @@ SnakeServer::SnakeServer(int width, int height)
     , running {true}
     , gameTickMs{GAME_TICKS_MS}
     , gen {std::random_device{}()}
-    , network {8170}
+    , network {SERVER_PORT}
     , clientIdToPlayerMap {}
     , occupiedCellsBodies {}
     , occupiedCellsHeads {}
@@ -108,22 +108,22 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     if (msg.message == SnakeConstants::KEY_QUIT) {
         running = false;
     }
-    else if (msg.message == SnakeConstants::KEY_UP) {
+    else if (msg.message == SnakeConstants::PLAYER_KEY_UP) {
         if (player.direction != 'v') {
             player.nextDirection = '^';
         }
     }
-    else if (msg.message == SnakeConstants::KEY_DOWN) {
+    else if (msg.message == SnakeConstants::PLAYER_KEY_DOWN) {
         if (player.direction != '^') {
             player.nextDirection = 'v';
         }
     }
-    else if (msg.message == SnakeConstants::KEY_LEFT) {
+    else if (msg.message == SnakeConstants::PLAYER_KEY_LEFT) {
         if (player.direction != '>') {
             player.nextDirection = '<';
         }
     }
-    else if (msg.message == SnakeConstants::KEY_RIGHT) {
+    else if (msg.message == SnakeConstants::PLAYER_KEY_RIGHT) {
         if (player.direction != '<') {
             player.nextDirection = '>';
         }

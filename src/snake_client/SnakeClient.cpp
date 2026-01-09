@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <chrono>
 #include <thread>
+#include "common/Constants.h"
 #include "common/ProtocolMessage.h"
 #include "snake_client/SnakeClient.h"
 
@@ -9,7 +10,7 @@ SnakeClient::SnakeClient(int width, int height)
     , height {height}
     , running {true}
     , score {0}
-    , network("127.0.0.1", 8170)
+    , network(SERVER_IP_ADDRESS, SERVER_PORT)
     , clientId(-1)
     , playerInput('\0')
     , gameState{} {
