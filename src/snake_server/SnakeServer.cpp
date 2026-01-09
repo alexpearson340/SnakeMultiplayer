@@ -9,6 +9,7 @@ SnakeServer::SnakeServer(int width, int height)
     : width {width}
     , height {height}
     , running {true}
+    , gameTickMs{GAME_TICKS_MS}
     , gen {std::random_device{}()}
     , network {8170}
     , clientIdToPlayerMap {} {
@@ -17,7 +18,7 @@ SnakeServer::SnakeServer(int width, int height)
 void SnakeServer::run() {
     auto lastGameTick = std::chrono::steady_clock::now();
 
-    while (running) {
+    while (true) {
         std::vector<ProtocolMessage> messages { network.pollMessages() };
         bool stateChanged = false;
 

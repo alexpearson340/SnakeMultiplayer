@@ -23,7 +23,7 @@ private:
     int width;
     int height;
     bool running;
-    int gameTickMs {500};
+    int gameTickMs;
     std::mt19937 gen;
 
     NetworkServer network;
