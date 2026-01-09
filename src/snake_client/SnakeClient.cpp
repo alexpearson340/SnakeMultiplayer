@@ -75,8 +75,7 @@ void SnakeClient::render() {
     renderPlayers();
     renderScore();
 
-    mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);
-    mvprintw(height + 3, 0, "Press 'q' to quit.\\n");
+    mvprintw(height + 2, 0, "Press 'q' to quit.\\n");
 
     refresh();
 }
@@ -165,4 +164,15 @@ void SnakeClient::renderFood() {
 }
 
 void SnakeClient::renderScore() {
+    std::vector<std::pair<std::string, int>> scores {};
+    for (auto & p : gameState.players) {
+        scores.push_back({p.name, p.score});
+    }
+
+    // Sort by score descending
+    std::sort(scores.begin(), scores.end(), [](const auto & l, const auto & r) {return l.second > r.second;});
+    int row = 1;
+    for (auto & [name, score] : scores) {
+        mvprintw(row++, 0, "%-11s %4d", name.c_str(), score);
+    }
 }
