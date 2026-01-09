@@ -22,6 +22,9 @@ void SnakeServer::run() {
     auto lastGameTick = std::chrono::steady_clock::now();
 
     placeFood();
+    while (foodMap.size() < MIN_FOOD_IN_ARENA) {
+        placeFood();
+    }
 
     while (true) {
         std::vector<ProtocolMessage> messages { network.pollMessages() };
@@ -173,13 +176,13 @@ void SnakeServer::checkCollisions() {
         if (player.head.y() == 0) {
             clientIdsToDestroy.push_back(clientId);
         }
-        else if (player.head.y() == height) {
+        else if (player.head.y() == height + 1) {
             clientIdsToDestroy.push_back(clientId);
         }
         else if (player.head.x() == 0) {
             clientIdsToDestroy.push_back(clientId);
         }
-        else if (player.head.x() == width) {
+        else if (player.head.x() == width + 1) {
             clientIdsToDestroy.push_back(clientId);
         }
         // collision with a snake body segment
@@ -202,10 +205,20 @@ void SnakeServer::checkCollisions() {
 }
 
 void SnakeServer::destroyPlayers(std::vector<int> & clientIds) {
+    std::uniform_int_distribution<> dist(1, 3);
     for (auto & id : clientIds) {
-        std::cout << "destroying player " << id << std::endl;
+
+        // place food randomly for each body segment
+        std::vector<std::pair<int, int>> segments {};
+        clientIdToPlayerMap.at(id).head.getSegments(segments);
+        for (auto it = segments.begin() + 1; it < segments.end(); it++) {
+            if (dist(gen) == 1) {
+                placeFood(it->first, it->second);
+            }
+        }
+
+        // delete the player
         clientIdToPlayerMap.erase(id);
-        std::cout << "destroyed player " << id << std::endl;
     }
 }
 
@@ -214,6 +227,9 @@ void SnakeServer::feedPlayer(std::pair<int, int> & playerCell, const int clientI
     clientIdToPlayerMap.at(clientId).score++;
     foodMap.erase(playerCell);
     placeFood();
+    if (foodMap.size() < MIN_FOOD_IN_ARENA) {
+        placeFood();
+    }
 }
 
 void SnakeServer::placeFood() {
@@ -221,6 +237,11 @@ void SnakeServer::placeFood() {
     std::uniform_int_distribution<> distY(1, height - 1);
     int x {distX(gen)};
     int y {distY(gen)};
+    std::cout << "Placing food at (" << x << ", " << y << ")" << std::endl;
+    foodMap[std::pair<int, int> {x, y}] = Food {x, y, '@'};
+}
+
+void SnakeServer::placeFood(const int x, const int y) {
     std::cout << "Placing food at (" << x << ", " << y << ")" << std::endl;
     foodMap[std::pair<int, int> {x, y}] = Food {x, y, '@'};
 }

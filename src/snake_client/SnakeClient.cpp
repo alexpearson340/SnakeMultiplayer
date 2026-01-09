@@ -70,8 +70,8 @@ void SnakeClient::run() {
 void SnakeClient::render() {
     clear();
     renderArena();
-    renderPlayers();
     renderFood();
+    renderPlayers();
     renderScore();
 
     mvprintw(height + 2, 0, "Score:%d, Width: %d, Height:%d", score, width, height);

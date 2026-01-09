@@ -24,6 +24,7 @@ private:
     void destroyPlayers(std::vector<int> &);
     void feedPlayer(std::pair<int, int> & playerCell, const int);
     void placeFood();
+    void placeFood(const int, const int);
     void broadcastGameState();
     std::string buildGameStatePayload();
 
