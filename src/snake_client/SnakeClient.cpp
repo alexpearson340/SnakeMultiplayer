@@ -7,12 +7,22 @@
 #include "common/ProtocolMessage.h"
 #include "snake_client/SnakeClient.h"
 
+static const char* getServerIp() {
+    const char* ip = getenv("SNAKE_SERVER_IP");
+    return ip ? ip : "127.0.0.1";
+}
+
+static int getServerPort() {
+    const char* port = getenv("SNAKE_SERVER_PORT");
+    return port ? std::atoi(port) : 8170;
+}
+
 SnakeClient::SnakeClient(int width, int height)
     : width {width}
     , height {height}
     , running {true}
     , score {0}
-    , network(SERVER_IP_ADDRESS, SERVER_PORT)
+    , network(getServerIp(), getServerPort())
     , clientId(-1)
     , playerInput('\0')
     , gameState{} {

@@ -2,7 +2,6 @@
 
 #include <string>
 
-inline const std::string SERVER_IP_ADDRESS {"127.0.0.1"};
 inline constexpr int SERVER_PORT {8170};
 inline constexpr int MAX_EVENTS {10};
 inline constexpr int EPOLL_BLOCKING_TIMEOUT {20};
