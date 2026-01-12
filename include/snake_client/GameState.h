@@ -12,6 +12,7 @@ namespace client {
         char direction;
         std::string name;
         int score;
+        int color;
         std::vector<std::pair<int, int>> segments;
     };
 
@@ -19,6 +20,7 @@ namespace client {
         int x;
         int y;
         char icon;
+        int color;
     };
 
     struct GameState {
@@ -41,6 +43,7 @@ namespace client {
                 p["direction"].get<std::string>()[0],
                 p["name"],
                 p["score"],
+                p["color"],
                 segments
             });
         }
@@ -52,6 +55,7 @@ namespace client {
                 f["x"],
                 f["y"],
                 f["icon"].get<std::string>()[0],
+                f["color"]
             });
         }
 

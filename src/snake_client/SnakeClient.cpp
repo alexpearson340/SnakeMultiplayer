@@ -90,6 +90,14 @@ void SnakeClient::initNcurses() {
     nodelay(stdscr, TRUE);
     keypad(stdscr, TRUE);
     curs_set(0);
+    start_color();
+    init_pair(static_cast<int>(Color::WHITE), COLOR_WHITE, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::RED), COLOR_RED, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::YELLOW), COLOR_YELLOW, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::GREEN), COLOR_GREEN, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::BLUE), COLOR_BLUE, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::CYAN), COLOR_CYAN, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::MAGENTA), COLOR_MAGENTA, COLOR_BLACK);
 }
 
 void SnakeClient::cleanupNcurses() {
@@ -153,16 +161,16 @@ void SnakeClient::renderArena() {
 
 void SnakeClient::renderPlayers() {
     for (auto & p : gameState.players) {
-        renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction);
+        renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction, p.color);
         for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
-            renderCharToScreen(it->first, it->second, 'c');
+            renderCharToScreen(it->first, it->second, 'c', p.color);
         }
     }
 }
 
 void SnakeClient::renderFood() {
     for (auto & f : gameState.food) {
-        renderCharToScreen(f.x, f.y, f.icon);
+        renderCharToScreen(f.x, f.y, f.icon, f.color);
     }
 }
 
@@ -180,6 +188,6 @@ void SnakeClient::renderScore() {
     }
 }
 
-void SnakeClient::renderCharToScreen(const int x, const int y, const char & character) {
-    mvaddch(y, x * CLIENT_HORIZONTAL_SCALING, character);
+void SnakeClient::renderCharToScreen(const int x, const int y, const char & character, const int color) {
+    mvaddch(y, x * CLIENT_HORIZONTAL_SCALING, character | COLOR_PAIR(color));
 }

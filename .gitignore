@@ -1,6 +1,7 @@
 .cache
 .vscode
 build
+compile_commands.json
 *patch*/
 screenshots/
 .DS_Store

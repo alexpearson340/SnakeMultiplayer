@@ -18,13 +18,15 @@ private:
     void handleClientConnect(const ProtocolMessage &);
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
+    void createNewPlayer(const ProtocolMessage &);
     void moveSnakes();
     void updateOccupiedCells(const int);
     void checkCollisions();
     void destroyPlayers(std::vector<int> &);
     void feedPlayer(std::pair<int, int> & playerCell, const int);
+    void replaceFood();
     void placeFood();
-    void placeFood(const int, const int);
+    void placeFood(const int, const int, const Color color = Color::WHITE);
     void broadcastGameState();
     std::string buildGameStatePayload();
 

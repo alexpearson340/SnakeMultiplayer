@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include "common/Constants.h"
 
 class PlayerNode {
 public:
@@ -62,10 +63,12 @@ struct Player {
     char nextDirection;
     std::string name;
     int score;
+    Color color;
 };
 
 struct Food {
     int x;
     int y;
     char icon;
+    Color color;
 };
