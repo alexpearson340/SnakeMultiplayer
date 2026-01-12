@@ -1,6 +1,7 @@
 #include <locale.h>
 #include <ncurses.h>
 #include <chrono>
+#include <cstdlib>
 #include <thread>
 #include "common/Constants.h"
 #include "common/ProtocolMessage.h"
@@ -47,11 +48,13 @@ void SnakeClient::handleInput() {
 void SnakeClient::run() {
     initNcurses();
 
-    // send a CLIENT_JOIN message to the server
+    const char* username = getenv("USER");
+    if (!username) username = "unknown";
+
     ProtocolMessage clientJoinMessage {
         MessageType::CLIENT_JOIN,
         clientId,
-        "apearson"  // todo
+        username
     };
     network.sendToServer(protocol::toString(clientJoinMessage));
 
