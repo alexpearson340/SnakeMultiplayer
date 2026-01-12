@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <ncurses.h>
 #include <chrono>
 #include <thread>
@@ -69,13 +70,11 @@ void SnakeClient::run() {
 }
 
 void SnakeClient::render() {
-    clear();
+    erase();
     renderArena();
     renderFood();
     renderPlayers();
     renderScore();
-
-    mvprintw(height + 2, 0, "Press 'q' to quit.\\n");
 
     refresh();
 }
@@ -84,6 +83,7 @@ void SnakeClient::cleanup() {
 }
 
 void SnakeClient::initNcurses() {
+    setlocale(LC_ALL, "");
     initscr();
     cbreak();
     noecho();
@@ -147,16 +147,23 @@ void SnakeClient::handleGameStateMessage(const ProtocolMessage & msg) {
 }
 
 void SnakeClient::renderArena() {
-    for (int y = 0; y <= height + 1; y++) {
-        for (int x = 0; x <= width + 1; x++) {
-            if (x == 0 || y == 0 || x == width + 1 || y == height + 1) {
-                renderCharToScreen(x, y, '.');  // boundary
-            }
-            else {
-                renderCharToScreen(x, y, ' ');  // empty space
-            }
-        }
+    // top and bottom boundary
+    for (int x = 1; x <= width; x++) {
+        renderCharToScreen(x, 0, '-');
+        renderCharToScreen(x, height + 1, '-');
     }
+
+    // left and right boundary
+    for (int y = 1; y <= height; y++) {
+        renderCharToScreen(0, y, '|');
+        renderCharToScreen(width + 1, y, '|');
+    }
+
+    // corners
+    renderCharToScreen(0, 0, '+');
+    renderCharToScreen(width + 1, 0, '+');
+    renderCharToScreen(0, height + 1, '+');
+    renderCharToScreen(width + 1, height + 1, '+');
 }
 
 void SnakeClient::renderPlayers() {
@@ -175,17 +182,24 @@ void SnakeClient::renderFood() {
 }
 
 void SnakeClient::renderScore() {
-    std::vector<std::pair<std::string, int>> scores {};
-    for (auto & p : gameState.players) {
-        scores.push_back({p.name, p.score});
-    }
+    mvprintw(height + 2, 0, "Press 'q' to quit.\\n");
+    std::vector<client::PlayerData> sortedPlayers {gameState.players};
 
     // Sort by score descending
-    std::sort(scores.begin(), scores.end(), [](const auto & l, const auto & r) {return l.second > r.second;});
-    int row = 1;
-    for (auto & [name, score] : scores) {
-        mvprintw(row++, 0, "%-11s %4d", name.c_str(), score);
+    std::sort(sortedPlayers.begin(), sortedPlayers.end(),
+        [](const auto & l, const auto & r) {return l.score > r.score;});
+
+    int row = height + 4;
+    mvprintw(row++, 0, "+----------- SCOREBOARD -----------+");
+
+    for (auto & p : sortedPlayers) {
+        mvprintw(row, 0, "| ");
+        mvaddch(row, 2, '#' | COLOR_PAIR(p.color));
+        mvprintw(row, 4, "%-20s %5d |", p.name.c_str(), p.score);
+        row++;
     }
+
+    mvprintw(row, 0, "+----------------------------------+");
 }
 
 void SnakeClient::renderCharToScreen(const int x, const int y, const char & character, const int color) {
