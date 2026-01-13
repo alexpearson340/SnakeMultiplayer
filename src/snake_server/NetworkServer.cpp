@@ -65,7 +65,6 @@ std::vector<ProtocolMessage> NetworkServer::pollMessages() {
     std::vector<ProtocolMessage> messages;
     epoll_event events[MAX_EVENTS];
     int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, EPOLL_BLOCKING_TIMEOUT);
-    std::cout << "numEvents=" << numEvents << std::endl;
 
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
@@ -113,22 +112,14 @@ void NetworkServer::acceptNewClient() {
     else {
         setNonBlocking(clientFd);
         registerFdWithEpoll(clientFd);
+
+        int clientId = nextClientId++;
+        fdToClientIdMap[clientFd] = clientId;
+        clientIdToFdMap[clientId] = clientFd;
+        fdToBufferMap[clientFd] = "";
+
+        std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
     }
-
-    // Make client socket non-blocking too
-    setNonBlocking(clientFd);
-
-    // Add client fd to epoll
-    registerFdWithEpoll(clientFd);
-
-    // Store mapping: fd -> clientId
-    int clientId = nextClientId++;
-    // TODO: Store in fdToClientId and clientIdToFd maps
-    fdToClientIdMap[clientFd] = clientId;
-    clientIdToFdMap[clientId] = clientFd;
-    fdToBufferMap[clientFd] = "";
-
-    std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
 }
 
 std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {

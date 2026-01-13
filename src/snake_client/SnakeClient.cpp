@@ -92,9 +92,6 @@ void SnakeClient::render() {
     refresh();
 }
 
-void SnakeClient::cleanup() {
-}
-
 void SnakeClient::initNcurses() {
     setlocale(LC_ALL, "");
     initscr();
@@ -181,7 +178,7 @@ void SnakeClient::renderArena() {
 
 void SnakeClient::renderPlayers() {
     for (auto & p : gameState.players) {
-        renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction, p.color);
+        renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction);
         for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
             renderCharToScreen(it->first, it->second, 'c', p.color);
         }
@@ -210,7 +207,7 @@ void SnakeClient::renderScore() {
     for (auto & p : sortedPlayers) {
         mvprintw(row, 0, "| ");
         mvaddch(row, 2, '#' | COLOR_PAIR(p.color));
-        mvprintw(row, 4, "%-20s %7d |", p.name.c_str(), p.score);
+        mvprintw(row, 4, "%-22s %7d |", p.name.c_str(), p.score);
         row++;
     }
 

@@ -13,10 +13,6 @@ inline constexpr int MIN_FOOD_IN_ARENA {3};
 
 namespace SnakeConstants {
     inline const std::string KEY_QUIT = "q";
-    inline const std::string KEY_UP = "^";
-    inline const std::string KEY_DOWN = "v";
-    inline const std::string KEY_LEFT = "<";
-    inline const std::string KEY_RIGHT = ">";
     inline const std::string PLAYER_KEY_QUIT = "q";
     inline const std::string PLAYER_KEY_UP = "^";
     inline const std::string PLAYER_KEY_DOWN = "v";

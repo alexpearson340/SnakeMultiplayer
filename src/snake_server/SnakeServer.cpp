@@ -59,7 +59,7 @@ void SnakeServer::run() {
 
 void SnakeServer::handleClientConnect(const ProtocolMessage & msg) {
     std::cout << "Adding new player " << msg.message << std::endl;
-    clientIdToPlayerMap.emplace(msg.clientId, Player { PlayerNode(width / 2, height / 2), '^', msg.message});
+    createNewPlayer(msg);
 }
 
 void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
