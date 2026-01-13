@@ -35,6 +35,7 @@ private:
     bool running;
     int gameTickMs;
     std::mt19937 gen;
+    std::pair <std::string, int> serverHighScore;
 
     NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;

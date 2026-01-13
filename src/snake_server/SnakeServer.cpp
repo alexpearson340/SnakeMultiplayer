@@ -11,6 +11,7 @@ SnakeServer::SnakeServer(int width, int height)
     , running {true}
     , gameTickMs{GAME_TICKS_MS}
     , gen {std::random_device{}()}
+    , serverHighScore {}
     , network {SERVER_PORT}
     , clientIdToPlayerMap {}
     , occupiedCellsBodies {}
@@ -197,6 +198,12 @@ void SnakeServer::checkCollisions() {
         // get food
         else if (foodMap.contains(playerHead)) {
             feedPlayer(playerHead, clientId);
+
+            // track all time score
+            if (player.score > serverHighScore.second) {
+                serverHighScore = {player.name, player.score};
+                std::cout << "New server high score, " << player.name << ": " << player.score << std::endl;
+            }
         }
     }
     if (!clientIdsToDestroy.empty()) {
@@ -250,6 +257,7 @@ void SnakeServer::broadcastGameState() {
 
 std::string SnakeServer::buildGameStatePayload() {
     json gameState;
+    gameState["server_high_score"] = {serverHighScore.first, serverHighScore.second};
 
     // players
     gameState["players"] = json::array();

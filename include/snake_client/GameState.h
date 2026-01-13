@@ -26,6 +26,7 @@ namespace client {
     struct GameState {
         std::vector<PlayerData> players;
         std::vector<FoodData> food;
+        std::pair<std::string, int> serverHighScore;
     };
 
     inline GameState parseGameState(const std::string & jsonStr) {
@@ -59,7 +60,9 @@ namespace client {
             });
         }
 
-        return {players, food};
+        std::pair<std::string, int> serverHighScore {j["server_high_score"][0], j["server_high_score"][1]};
+
+        return {players, food, serverHighScore};
     }
 
 };

@@ -195,20 +195,22 @@ void SnakeClient::renderFood() {
 }
 
 void SnakeClient::renderScore() {
-    mvprintw(height + 2, 0, "Press 'q' to quit.\\n");
+    mvprintw(height + 2, 0, "Press 'q' to quit");
+    std::string serverHighScore {"Server high score is " + gameState.serverHighScore.first + ": " + std::to_string(gameState.serverHighScore.second)};
+    mvprintw(height + 3, 0, serverHighScore.c_str());
     std::vector<client::PlayerData> sortedPlayers {gameState.players};
 
     // Sort by score descending
     std::sort(sortedPlayers.begin(), sortedPlayers.end(),
         [](const auto & l, const auto & r) {return l.score > r.score;});
 
-    int row = height + 4;
+    int row = height + 5;
     mvprintw(row++, 0, "+----------- SCOREBOARD -----------+");
 
     for (auto & p : sortedPlayers) {
         mvprintw(row, 0, "| ");
         mvaddch(row, 2, '#' | COLOR_PAIR(p.color));
-        mvprintw(row, 4, "%-20s %5d |", p.name.c_str(), p.score);
+        mvprintw(row, 4, "%-20s %7d |", p.name.c_str(), p.score);
         row++;
     }
 
