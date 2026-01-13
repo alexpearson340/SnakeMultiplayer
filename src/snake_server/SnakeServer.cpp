@@ -9,7 +9,8 @@ SnakeServer::SnakeServer(int width, int height)
     : width {width}
     , height {height}
     , running {true}
-    , gameTickMs{GAME_TICKS_MS}
+    , movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS))
+    , currentGameTick(std::chrono::steady_clock::now())
     , gen {std::random_device{}()}
     , serverHighScore {}
     , network {SERVER_PORT}
@@ -20,9 +21,8 @@ SnakeServer::SnakeServer(int width, int height)
 }
 
 void SnakeServer::run() {
-    auto lastGameTick = std::chrono::steady_clock::now();
-
     while (true) {
+        currentGameTick = std::chrono::steady_clock::now();
         replaceFood();
         std::vector<ProtocolMessage> messages { network.pollMessages() };
         bool stateChanged = false;
@@ -46,14 +46,9 @@ void SnakeServer::run() {
             }
         }
 
-        auto now = std::chrono::steady_clock::now();
-        auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - lastGameTick);
-
-        if (elapsed.count() >= gameTickMs) {
-            moveSnakes();
+        if (updateSnakes()) {
             checkCollisions();
             stateChanged = true;
-            lastGameTick = now;
         }
 
         if (stateChanged) {
@@ -80,7 +75,7 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
 }
 
 void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
-    // todo player construction and placement
+    // todo player placement
     clientIdToPlayerMap.emplace(
         msg.clientId,
         Player {
@@ -89,7 +84,9 @@ void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
             '^',
             msg.message,
             1,
-            static_cast<Color>((msg.clientId % 6) + 2)
+            static_cast<Color>((msg.clientId % 6) + 2),
+            movementFrequencyMs,
+            currentGameTick + movementFrequencyMs
         }
     );
 }
@@ -134,29 +131,42 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     }
 }
 
-void SnakeServer::moveSnakes() {
+bool SnakeServer::updateSnakes() {
+    bool snakeUpdates {false};
+
+    // todo maybe do a differential update to occupiedCells if we need better performance
     occupiedCellsBodies.clear();
     occupiedCellsHeads.clear();
     for (auto & [clientId, player] : clientIdToPlayerMap) {
-        player.direction = player.nextDirection;
-        switch (player.direction) {
-            case '^':
-                player.head.move(0, -1);
-                break;
-            case 'v':
-                player.head.move(0, 1);
-                break;
-            case '<':
-                player.head.move(-1, 0);
-                break;
-            case '>':
-                player.head.move(1, 0);
-                break;
-            default:
-                throw std::runtime_error("Invalid direction: " + std::string(1, player.direction));
+        if (currentGameTick >= player.nextMoveTime) {
+            moveSnake(clientId);
+            snakeUpdates = true;
         }
         updateOccupiedCells(clientId);
     }
+    return snakeUpdates;
+}
+
+void SnakeServer::moveSnake(const int clientId) {
+    Player & player {clientIdToPlayerMap.at(clientId)};
+    player.direction = player.nextDirection;
+    switch (player.direction) {
+        case '^':
+            player.head.move(0, -1);
+            break;
+        case 'v':
+            player.head.move(0, 1);
+            break;
+        case '<':
+            player.head.move(-1, 0);
+            break;
+        case '>':
+            player.head.move(1, 0);
+            break;
+        default:
+            throw std::runtime_error("Invalid direction: " + std::string(1, player.direction));
+    }
+    player.nextMoveTime = currentGameTick + player.movementFrequencyMs;
 }
 
 void SnakeServer::updateOccupiedCells(const int clientId) {

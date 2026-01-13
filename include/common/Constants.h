@@ -5,7 +5,7 @@
 inline constexpr int SERVER_PORT {8170};
 inline constexpr int MAX_EVENTS {10};
 inline constexpr int EPOLL_BLOCKING_TIMEOUT {20};
-inline constexpr int GAME_TICKS_MS {200};
+inline constexpr int MOVEMENT_FREQUENCY_MS {200};
 inline constexpr int ARENA_WIDTH {30};
 inline constexpr int ARENA_HEIGHT {30};
 inline constexpr int CLIENT_HORIZONTAL_SCALING {2};

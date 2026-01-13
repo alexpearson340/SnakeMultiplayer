@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <vector>
 #include "common/Constants.h"
@@ -64,6 +65,8 @@ struct Player {
     std::string name;
     int score;
     Color color;
+    std::chrono::milliseconds movementFrequencyMs;
+    std::chrono::time_point<std::chrono::steady_clock> nextMoveTime;
 };
 
 struct Food {

@@ -1,8 +1,9 @@
 #pragma once
 
+#include <chrono>
 #include <unordered_map>
-#include <unordered_set>
 #include <random>
+#include <unordered_set>
 #include "common/Hash.h"
 #include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
@@ -19,7 +20,8 @@ private:
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
     void createNewPlayer(const ProtocolMessage &);
-    void moveSnakes();
+    bool updateSnakes();
+    void moveSnake(const int);
     void updateOccupiedCells(const int);
     void checkCollisions();
     void destroyPlayers(std::vector<int> &);
@@ -33,7 +35,8 @@ private:
     int width;
     int height;
     bool running;
-    int gameTickMs;
+    std::chrono::milliseconds movementFrequencyMs;
+    std::chrono::time_point<std::chrono::steady_clock> currentGameTick;
     std::mt19937 gen;
     std::pair <std::string, int> serverHighScore;
 
