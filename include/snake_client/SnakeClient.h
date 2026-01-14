@@ -10,6 +10,7 @@ public:
     void run();
 
 private:
+    void joinGame();
     void handleInput();
     void sendPlayerInput();
     void receiveUpdates();
@@ -28,6 +29,7 @@ private:
     int width;
     int height;
     bool running;
+    bool playing;
     int score;
 
     NetworkClient network;

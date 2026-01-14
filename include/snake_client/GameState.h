@@ -31,7 +31,7 @@ namespace client {
     };
 
     struct GameState {
-        std::vector<PlayerData> players;
+        std::unordered_map<int, PlayerData> players;
         std::vector<FoodData> food;
         std::vector<SpeedBoostsData> speedBoosts;
         std::pair<std::string, int> serverHighScore;
@@ -41,20 +41,20 @@ namespace client {
         json j = json::parse(jsonStr);
 
         // players
-        std::vector<PlayerData> players {};
+        std::unordered_map<int, PlayerData> players {};
         for (auto & p : j["players"]) {
             std::vector<std::pair<int, int>> segments {};
             for (auto & s : p["segments"]) {
                 segments.push_back({s[0], s[1]});
             }
-            players.push_back({
+            players[p["client_id"]] = {
                 p["client_id"],
                 p["direction"].get<std::string>()[0],
                 p["name"],
                 p["score"],
                 p["color"],
                 segments
-            });
+            };
         }
 
         // food

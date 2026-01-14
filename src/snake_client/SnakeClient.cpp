@@ -21,6 +21,7 @@ SnakeClient::SnakeClient(int width, int height)
     : width {width}
     , height {height}
     , running {true}
+    , playing {false}
     , score {0}
     , network(getServerIp(), getServerPort())
     , clientId(-1)
@@ -33,11 +34,13 @@ SnakeClient::~SnakeClient() {
 }
 
 void SnakeClient::handleInput() {
-    // todo client side 180 protection
     int ch = getch();
     if (ch != ERR) {
         if (ch == 'q' || ch == 'Q') {
             running = false;
+        }
+        else if (!playing && (ch == 'r' || ch == 'R')) {
+            joinGame();
         }
         else if (ch == KEY_UP) {
             playerInput = '^';
@@ -57,7 +60,21 @@ void SnakeClient::handleInput() {
 
 void SnakeClient::run() {
     initNcurses();
+    joinGame();
+    while (running) {
+        handleInput();
 
+        if (playing && playerInput != '\0') {
+            sendPlayerInput();
+        }
+        receiveUpdates();
+        render();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void SnakeClient::joinGame() {
     const char* username = getenv("USER");
     if (!username) username = "unknown";
 
@@ -67,19 +84,6 @@ void SnakeClient::run() {
         username
     };
     network.sendToServer(protocol::toString(clientJoinMessage));
-
-    while (running) {
-        handleInput();
-
-        if (clientId != -1) {
-            sendPlayerInput();
-        }
-
-        receiveUpdates();
-        render();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
 }
 
 void SnakeClient::render() {
@@ -149,10 +153,15 @@ void SnakeClient::receiveUpdates() {
 
 void SnakeClient::handleServerWelcome(const ProtocolMessage & msg) {
     clientId = msg.clientId;
+    playing = true;
 }
 
 void SnakeClient::handleGameStateMessage(const ProtocolMessage & msg) {
     gameState = client::parseGameState(msg.message);
+    if (!gameState.players.contains(clientId)) {
+        playing = false;
+        clientId = -1;
+    }
 }
 
 void SnakeClient::renderArena() {
@@ -176,7 +185,7 @@ void SnakeClient::renderArena() {
 }
 
 void SnakeClient::renderPlayers() {
-    for (auto & p : gameState.players) {
+    for (auto & [clientId, p] : gameState.players) {
         renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction);
         for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
             renderCharToScreen(it->first, it->second, 'c', p.color);
@@ -197,7 +206,10 @@ void SnakeClient::renderScore() {
     mvprintw(height + 2, 0, "Press 'q' to quit");
     std::string serverHighScore {"Server high score is " + gameState.serverHighScore.first + ": " + std::to_string(gameState.serverHighScore.second)};
     mvprintw(height + 3, 0, serverHighScore.c_str());
-    std::vector<client::PlayerData> sortedPlayers {gameState.players};
+    std::vector<client::PlayerData> sortedPlayers {};
+    for (auto & [clientId, p] : gameState.players) {
+        sortedPlayers.push_back(p);
+    }
 
     // Sort by score descending
     std::sort(sortedPlayers.begin(), sortedPlayers.end(),
