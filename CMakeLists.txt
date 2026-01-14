@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.14)
-project(zsnake)
+project(SnakeMultiplayer)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
@@ -74,3 +74,10 @@ target_link_libraries(
     snake_server_lib
 )
 # copy compile_commands.json to project root
+add_custom_target(
+    copy-compile-commands ALL
+    ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_BINARY_DIR}/compile_commands.json   
+        ${CMAKE_SOURCE_DIR}/compile_commands.json
+    DEPENDS ${CMAKE_BINARY_DIR}/compile_commands.json   
+)
