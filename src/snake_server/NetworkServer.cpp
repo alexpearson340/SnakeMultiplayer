@@ -44,8 +44,6 @@ NetworkServer::NetworkServer(int port)
         close(serverFd);
         throw std::runtime_error("Listen failed");
     }
-
-    // Make non-blocking
     setNonBlocking(serverFd);
 
     // Create epoll instance
@@ -56,8 +54,8 @@ NetworkServer::NetworkServer(int port)
     }
     std::cout << "epollFd=" << epollFd << std::endl;
 
+    // Add the server socket to epoll
     registerFdWithEpoll(serverFd);
-
     std::cout << "Server listening on port " << port << std::endl;
 }
 
@@ -140,8 +138,7 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
         fdToClientIdMap.erase(fd);
         clientIdToFdMap.erase(msg.clientId);
         fdToBufferMap.erase(fd);
-        msg.messageType = MessageType::CLIENT_DISCONNECT;
-        msg.message = std::to_string(msg.clientId);
+        
         return std::vector<ProtocolMessage> {msg};
     }
 

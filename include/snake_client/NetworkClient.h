@@ -10,7 +10,6 @@ public:
 
     void sendToServer(std::string_view msg);
     std::vector<ProtocolMessage> receiveFromServer();
-    bool isConnected() const;
 
 private:
     void connectToServer(const std::string& host, int port);

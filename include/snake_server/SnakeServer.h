@@ -11,12 +11,10 @@
 class SnakeServer {
 public:
     SnakeServer(int width, int height);
-
     void run();
 
 private:
     void handleClientJoin(const ProtocolMessage &);
-    void handleClientConnect(const ProtocolMessage &);
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
     void createNewPlayer(const ProtocolMessage &);
@@ -38,7 +36,6 @@ private:
     
     int width;
     int height;
-    bool running;
     std::chrono::milliseconds movementFrequencyMs;
     std::chrono::milliseconds boostedMovementFrequencyMs;
     std::chrono::milliseconds boostDurationMs;
@@ -53,4 +50,3 @@ private:
     std::unordered_map<std::pair<int, int>, Food, PairHash> foodMap;
     std::unordered_map<std::pair<int, int>, SpeedBoost, PairHash> speedBoostMap;
 };
-

@@ -8,7 +8,6 @@
 SnakeServer::SnakeServer(int width, int height)
     : width {width}
     , height {height}
-    , running {true}
     , movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS))
     , boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS))
     , boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS))
@@ -61,12 +60,8 @@ void SnakeServer::run() {
     }
 }
 
-void SnakeServer::handleClientConnect(const ProtocolMessage & msg) {
-    std::cout << "Adding new player " << msg.message << std::endl;
-    createNewPlayer(msg);
-}
-
 void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
+    std::cout << "New client joined: " << msg.message << std::endl;
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
@@ -76,25 +71,6 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
         ""
     };
     network.sendToClient(msg.clientId, protocol::toString(serverWelcomeMessage));
-}
-
-void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
-    // todo player placement
-    clientIdToPlayerMap.emplace(
-        msg.clientId,
-        Player {
-            PlayerNode{width / 2, height / 2},
-            '^',
-            '^',
-            msg.message,
-            1,
-            static_cast<Color>((msg.clientId % 5) + 2),
-            movementFrequencyMs,
-            currentGameTick + movementFrequencyMs,
-            false,
-            currentGameTick
-        }
-    );
 }
 
 void SnakeServer::handleClientDisconnect(const ProtocolMessage & msg) {
@@ -107,12 +83,9 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
         std::cout << "Ignoring input from unknown clientId: " << msg.clientId << std::endl;
         return;
     }
-
     Player & player {clientIdToPlayerMap.at(msg.clientId)};
-    if (msg.message == SnakeConstants::PLAYER_KEY_QUIT) {
-        running = false;
-    }
-    else if (msg.message == SnakeConstants::PLAYER_KEY_UP) {
+
+    if (msg.message == SnakeConstants::PLAYER_KEY_UP) {
         if (player.direction != 'v') {
             player.nextDirection = '^';
         }
@@ -135,6 +108,25 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     else {
         std::cout << "Unexpected receive from clientId(" << msg.clientId << "): " << msg.message << std::endl;
     }
+}
+
+void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
+    // todo player placement
+    clientIdToPlayerMap.emplace(
+        msg.clientId,
+        Player {
+            PlayerNode{width / 2, height / 2},
+            '^',
+            '^',
+            msg.message,
+            1,
+            static_cast<Color>((msg.clientId % 5) + 2),
+            movementFrequencyMs,
+            currentGameTick + movementFrequencyMs,
+            false,
+            currentGameTick
+        }
+    );
 }
 
 bool SnakeServer::updateSnakes() {
@@ -210,22 +202,26 @@ void SnakeServer::checkCollisions() {
             std::cout << "Destroying " << player.name << " due to upper boundary collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
+
         // collision with a snake body segment
         else if (occupiedCellsBodies.contains(playerHead)) {
             std::cout << "Destroying " << player.name << " due to snake body collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
+
         // collision with a different snake's head
         else if (occupiedCellsHeads.contains(playerHead) && occupiedCellsHeads.at(playerHead).size() > 1) {
             std::cout << "Destroying " << player.name << " due to snake head collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
+
         // get food
         else if (foodMap.contains(playerHead)) {
             std::cout << "Feeding player " << player.name << " at " << "(";
             std::cout << playerHead.first << ", " << playerHead.second << ")" << std::endl;
             feedPlayer(playerHead, clientId);
         }
+
         // get speed boost
         else if (speedBoostMap.contains(playerHead)) {
             std::cout << "Boosting player " << player.name << " at " << "(";
@@ -240,15 +236,19 @@ void SnakeServer::checkCollisions() {
         }
     }
     if (!clientIdsToDestroy.empty()) {
+        logGameState();
+        logOccupiedCells();
         destroyPlayers(clientIdsToDestroy);
     }
 }
 
 void SnakeServer::destroyPlayers(std::vector<int> & clientIds) {
-    std::uniform_int_distribution<> dist(1, 3);
+    std::uniform_int_distribution<> dist(1, FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY);
     for (auto & id : clientIds) {
-        Player & player {clientIdToPlayerMap.at(id)};
+
+        // chance to spawn food on player death for each body segment
         std::vector<std::pair<int, int>> segments {};
+        Player & player {clientIdToPlayerMap.at(id)};
         player.head.getSegments(segments);
         for (auto it = segments.begin() + 1; it < segments.end(); it++) {
             if (dist(gen) == 1) {

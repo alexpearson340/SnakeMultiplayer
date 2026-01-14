@@ -12,7 +12,7 @@ static const char* getServerIp() {
 
 static int getServerPort() {
     const char* port = getenv("SNAKE_SERVER_PORT");
-    return port ? std::atoi(port) : 8170;
+    return port ? std::atoi(port) : SERVER_PORT;
 }
 
 SnakeClient::SnakeClient(int width, int height)
@@ -29,31 +29,6 @@ SnakeClient::SnakeClient(int width, int height)
 
 SnakeClient::~SnakeClient() {
     cleanupNcurses();
-}
-
-void SnakeClient::handleInput() {
-    int ch = getch();
-    if (ch != ERR) {
-        if (ch == 'q' || ch == 'Q') {
-            running = false;
-        }
-        else if (!playing && (ch == 'r' || ch == 'R')) {
-            joinGame();
-        }
-        else if (ch == KEY_UP) {
-            playerInput = '^';
-        }
-        else if (ch == KEY_DOWN) {
-            playerInput = 'v';
-        }
-        else if (ch == KEY_LEFT) {
-            playerInput = '<';
-        }
-        else if (ch == KEY_RIGHT) {
-            playerInput = '>';
-        }
-    }
-    flushinp();  // Flush any remaining input
 }
 
 void SnakeClient::run() {
@@ -82,35 +57,29 @@ void SnakeClient::joinGame() {
     network.sendToServer(protocol::toString(clientJoinMessage));
 }
 
-void SnakeClient::render() {
-    erase();
-    renderArena();
-    renderObjects();
-    renderPlayers();
-    renderScore();
-
-    refresh();
-}
-
-void SnakeClient::initNcurses() {
-    setlocale(LC_ALL, "");
-    initscr();
-    cbreak();
-    noecho();
-    timeout(INPUT_BLOCKING_TIMEOUT_MS);
-    keypad(stdscr, TRUE);
-    curs_set(0);
-    start_color();
-    init_pair(static_cast<int>(Color::WHITE), COLOR_WHITE, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::YELLOW), COLOR_YELLOW, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::RED), COLOR_RED, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::GREEN), COLOR_GREEN, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::CYAN), COLOR_CYAN, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::MAGENTA), COLOR_MAGENTA, COLOR_BLACK);
-}
-
-void SnakeClient::cleanupNcurses() {
-    endwin();
+void SnakeClient::handleInput() {
+    int ch = getch();
+    if (ch != ERR) {
+        if (ch == 'q' || ch == 'Q') {
+            running = false;
+        }
+        else if (!playing && (ch == 'r' || ch == 'R')) {
+            joinGame();
+        }
+        else if (ch == KEY_UP) {
+            playerInput = '^';
+        }
+        else if (ch == KEY_DOWN) {
+            playerInput = 'v';
+        }
+        else if (ch == KEY_LEFT) {
+            playerInput = '<';
+        }
+        else if (ch == KEY_RIGHT) {
+            playerInput = '>';
+        }
+    }
+    flushinp();  // Flush any remaining input
 }
 
 void SnakeClient::sendPlayerInput() {
@@ -120,6 +89,7 @@ void SnakeClient::sendPlayerInput() {
         std::string(1, playerInput)
     };
     network.sendToServer(protocol::toString(playerInputMessage));
+    playerInput = '\0';
 }
 
 void SnakeClient::receiveUpdates() {
@@ -158,6 +128,15 @@ void SnakeClient::handleGameStateMessage(const ProtocolMessage & msg) {
         playing = false;
         clientId = -1;
     }
+}
+
+void SnakeClient::render() {
+    erase();
+    renderArena();
+    renderObjects();
+    renderPlayers();
+    renderScore();
+    refresh();
 }
 
 void SnakeClient::renderArena() {
@@ -227,4 +206,25 @@ void SnakeClient::renderScore() {
 
 void SnakeClient::renderCharToScreen(const int x, const int y, const char & character, const int color) {
     mvaddch(y, x * CLIENT_HORIZONTAL_SCALING, character | COLOR_PAIR(color));
+}
+
+void SnakeClient::initNcurses() {
+    setlocale(LC_ALL, "");
+    initscr();
+    cbreak();
+    noecho();
+    timeout(INPUT_BLOCKING_TIMEOUT_MS);
+    keypad(stdscr, TRUE);
+    curs_set(0);
+    start_color();
+    init_pair(static_cast<int>(Color::WHITE), COLOR_WHITE, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::YELLOW), COLOR_YELLOW, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::RED), COLOR_RED, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::GREEN), COLOR_GREEN, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::CYAN), COLOR_CYAN, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::MAGENTA), COLOR_MAGENTA, COLOR_BLACK);
+}
+
+void SnakeClient::cleanupNcurses() {
+    endwin();
 }

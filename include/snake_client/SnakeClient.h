@@ -10,6 +10,8 @@ public:
     void run();
 
 private:
+    void initNcurses();
+    void cleanupNcurses();
     void joinGame();
     void handleInput();
     void sendPlayerInput();
@@ -22,9 +24,6 @@ private:
     void renderObjects();
     void renderScore();
     void renderCharToScreen(const int, const int, const char &, const int color = 1);
-
-    void initNcurses();
-    void cleanupNcurses();
 
     int width;
     int height;

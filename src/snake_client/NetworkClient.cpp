@@ -6,7 +6,6 @@
 #include <fcntl.h>
 #include <stdexcept>
 #include <cstring>
-#include <iostream>
 
 NetworkClient::NetworkClient(const std::string& host, int port)
     : serverFd{-1}
@@ -101,8 +100,4 @@ std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char* buffer, si
         messageBuffer.erase(0, pos + 1);
     }
     return messages;
-}
-
-bool NetworkClient::isConnected() const {
-    return connected;
 }
