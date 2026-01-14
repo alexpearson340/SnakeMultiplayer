@@ -31,7 +31,9 @@ private:
     void placeFood(const int, const int, const Color color = Color::WHITE);
     void broadcastGameState();
     std::string buildGameStatePayload();
-
+    void logGameState();
+    void logOccupiedCells();
+    
     int width;
     int height;
     bool running;

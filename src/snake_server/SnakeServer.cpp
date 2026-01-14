@@ -185,35 +185,41 @@ void SnakeServer::checkCollisions() {
 
         // collision with arena boundary
         if (player.head.y() <= 0) {
+            std::cout << "Destroying " << player.name << " due to upper boundary collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
         else if (player.head.y() >= height + 1) {
+            std::cout << "Destroying " << player.name << " due to lower boundary collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
         else if (player.head.x() <= 0) {
+            std::cout << "Destroying " << player.name << " due to left boundary collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
         else if (player.head.x() >= width + 1) {
+            std::cout << "Destroying " << player.name << " due to upper boundary collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
         // collision with a snake body segment
         else if (occupiedCellsBodies.contains(playerHead)) {
+            std::cout << "Destroying " << player.name << " due to snake body collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
         // collision with a different snake's head
         else if (occupiedCellsHeads.contains(playerHead) && occupiedCellsHeads.at(playerHead).size() > 1) {
+            std::cout << "Destroying " << player.name << " due to snake head collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
 
         // get food
         else if (foodMap.contains(playerHead)) {
             feedPlayer(playerHead, clientId);
+        }
 
-            // track all time score
-            if (player.score > serverHighScore.second) {
-                serverHighScore = {player.name, player.score};
-                std::cout << "New server high score, " << player.name << ": " << player.score << std::endl;
-            }
+        // track all time score
+        if (player.score > serverHighScore.second) {
+            serverHighScore = {player.name, player.score};
+            std::cout << "New server high score, " << player.name << ": " << player.score << std::endl;
         }
     }
     if (!clientIdsToDestroy.empty()) {
@@ -262,7 +268,8 @@ void SnakeServer::placeFood(const int x, const int y, const Color color) {
 }
 
 void SnakeServer::broadcastGameState() {
-    network.broadcast(buildGameStatePayload());
+    network.broadcast(protocol::toString(ProtocolMessage {
+        MessageType::GAME_STATE, -1, buildGameStatePayload()}));
 }
 
 std::string SnakeServer::buildGameStatePayload() {
@@ -300,6 +307,28 @@ std::string SnakeServer::buildGameStatePayload() {
         gameState["food"].push_back(foodJson);
     }
 
-    ProtocolMessage msg {MessageType::GAME_STATE, -1, gameState.dump()};
-    return protocol::toString(msg);
+    return gameState.dump();
+}
+
+void SnakeServer::logGameState() {
+    std::cout << "Game state: " << buildGameStatePayload() << std::endl;
+}
+
+void SnakeServer::logOccupiedCells() {
+    std::cout << "Occupied cells (bodies):" << std::endl;
+    for (auto & [cell, players] : occupiedCellsBodies) {
+        std::cout << "(" << cell.first << ", " << cell.second << "): {";
+        for (auto & player : players) {
+            std::cout << player << " ";
+        }
+        std::cout << "}" << std::endl;
+    }
+    std::cout << "Occupied cells (heads):" << std::endl;
+    for (auto & [cell, players] : occupiedCellsHeads) {
+        std::cout << "(" << cell.first << ", " << cell.second << "): {";
+        for (auto & player : players) {
+            std::cout << player << " ";
+        }
+        std::cout << "}" << std::endl;
+    }
 }
