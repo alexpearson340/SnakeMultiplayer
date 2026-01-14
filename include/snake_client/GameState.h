@@ -23,9 +23,17 @@ namespace client {
         int color;
     };
 
+    struct SpeedBoostsData {
+        int x;
+        int y;
+        char icon;
+        int color;
+    };
+
     struct GameState {
         std::vector<PlayerData> players;
         std::vector<FoodData> food;
+        std::vector<SpeedBoostsData> speedBoosts;
         std::pair<std::string, int> serverHighScore;
     };
 
@@ -60,9 +68,20 @@ namespace client {
             });
         }
 
+        // speed boosts
+        std::vector<SpeedBoostsData> speedBoosts {};
+        for (auto & s: j["speed_boosts"]) {
+            speedBoosts.push_back({
+                s["x"],
+                s["y"],
+                s["icon"].get<std::string>()[0],
+                s["color"]
+            });
+        }
+
         std::pair<std::string, int> serverHighScore {j["server_high_score"][0], j["server_high_score"][1]};
 
-        return {players, food, serverHighScore};
+        return {players, food, speedBoosts, serverHighScore};
     }
 
 };

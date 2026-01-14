@@ -25,10 +25,12 @@ private:
     void updateOccupiedCells(const int);
     void checkCollisions();
     void destroyPlayers(std::vector<int> &);
-    void feedPlayer(std::pair<int, int> & playerCell, const int);
+    void feedPlayer(std::pair<int, int> &, const int);
+    void boostPlayer(std::pair<int, int> &, const int);
     void replaceFood();
     void placeFood();
     void placeFood(const int, const int, const Color color = Color::WHITE);
+    void placeSpeedBoost();
     void broadcastGameState();
     std::string buildGameStatePayload();
     void logGameState();
@@ -38,6 +40,8 @@ private:
     int height;
     bool running;
     std::chrono::milliseconds movementFrequencyMs;
+    std::chrono::milliseconds boostedMovementFrequencyMs;
+    std::chrono::milliseconds boostDurationMs;
     std::chrono::time_point<std::chrono::steady_clock> currentGameTick;
     std::mt19937 gen;
     std::pair <std::string, int> serverHighScore;
@@ -47,5 +51,6 @@ private:
     std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsBodies;
     std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsHeads;
     std::unordered_map<std::pair<int, int>, Food, PairHash> foodMap;
+    std::unordered_map<std::pair<int, int>, SpeedBoost, PairHash> speedBoostMap;
 };
 

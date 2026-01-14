@@ -67,9 +67,18 @@ struct Player {
     Color color;
     std::chrono::milliseconds movementFrequencyMs;
     std::chrono::time_point<std::chrono::steady_clock> nextMoveTime;
+    bool boosted;
+    std::chrono::time_point<std::chrono::steady_clock> boostExpireTime;
 };
 
 struct Food {
+    int x;
+    int y;
+    char icon;
+    Color color;
+};
+
+struct SpeedBoost {
     int x;
     int y;
     char icon;

@@ -18,7 +18,7 @@ private:
     void render();
     void renderArena();
     void renderPlayers();
-    void renderFood();
+    void renderObjects();
     void renderScore();
     void renderCharToScreen(const int, const int, const char &, const int color = 1);
 

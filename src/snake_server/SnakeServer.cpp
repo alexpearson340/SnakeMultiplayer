@@ -10,6 +10,8 @@ SnakeServer::SnakeServer(int width, int height)
     , height {height}
     , running {true}
     , movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS))
+    , boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS))
+    , boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS))
     , currentGameTick(std::chrono::steady_clock::now())
     , gen {std::random_device{}()}
     , serverHighScore {}
@@ -17,7 +19,8 @@ SnakeServer::SnakeServer(int width, int height)
     , clientIdToPlayerMap {}
     , occupiedCellsBodies {}
     , occupiedCellsHeads {}
-    , foodMap {} {
+    , foodMap {}
+    , speedBoostMap {} {
 }
 
 void SnakeServer::run() {
@@ -48,6 +51,7 @@ void SnakeServer::run() {
 
         if (updateSnakes()) {
             checkCollisions();
+            placeSpeedBoost();
             stateChanged = true;
         }
 
@@ -86,7 +90,9 @@ void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
             1,
             static_cast<Color>((msg.clientId % 6) + 2),
             movementFrequencyMs,
-            currentGameTick + movementFrequencyMs
+            currentGameTick + movementFrequencyMs,
+            false,
+            currentGameTick
         }
     );
 }
@@ -138,6 +144,10 @@ bool SnakeServer::updateSnakes() {
     occupiedCellsBodies.clear();
     occupiedCellsHeads.clear();
     for (auto & [clientId, player] : clientIdToPlayerMap) {
+        if (player.boosted && player.boostExpireTime <= currentGameTick) {
+            player.boosted = false;
+            player.movementFrequencyMs = movementFrequencyMs;
+        }
         if (currentGameTick >= player.nextMoveTime) {
             moveSnake(clientId);
             snakeUpdates = true;
@@ -210,10 +220,13 @@ void SnakeServer::checkCollisions() {
             std::cout << "Destroying " << player.name << " due to snake head collision" << std::endl;
             clientIdsToDestroy.push_back(clientId);
         }
-
         // get food
         else if (foodMap.contains(playerHead)) {
             feedPlayer(playerHead, clientId);
+        }
+        // get speed boost
+        else if (speedBoostMap.contains(playerHead)) {
+            boostPlayer(playerHead, clientId);
         }
 
         // track all time score
@@ -250,6 +263,13 @@ void SnakeServer::feedPlayer(std::pair<int, int> & playerCell, const int clientI
     foodMap.erase(playerCell);
 }
 
+void SnakeServer::boostPlayer(std::pair<int, int> & playerCell, const int clientId) {
+    clientIdToPlayerMap.at(clientId).boosted = true;
+    clientIdToPlayerMap.at(clientId).movementFrequencyMs = boostedMovementFrequencyMs;
+    clientIdToPlayerMap.at(clientId).boostExpireTime = currentGameTick + boostDurationMs;
+    speedBoostMap.erase(playerCell);
+}
+
 void SnakeServer::replaceFood() {
     if (foodMap.size() < MIN_FOOD_IN_ARENA) {
         placeFood();
@@ -265,6 +285,20 @@ void SnakeServer::placeFood() {
 void SnakeServer::placeFood(const int x, const int y, const Color color) {
     std::cout << "Placing food at (" << x << ", " << y << ")" << std::endl;
     foodMap[std::pair<int, int> {x, y}] = Food {x, y, '@', color};
+}
+
+void SnakeServer::placeSpeedBoost() {
+    if (speedBoostMap.empty()) {
+        std::uniform_int_distribution<> dist(1, SPEED_BOOST_PROBABILITY);
+        if (dist(gen) == 1) {
+            std::uniform_int_distribution<> distX(1, width - 1);
+            std::uniform_int_distribution<> distY(1, height - 1);
+            int x {distX(gen)};
+            int y {distY(gen)};
+            std::cout << "Placing speed boost at (" << x << ", " << y << ")";
+            speedBoostMap[std::pair<int, int> {x, y}] = SpeedBoost {x, y, '*', Color::WHITE};
+        }
+    }
 }
 
 void SnakeServer::broadcastGameState() {
@@ -305,6 +339,17 @@ std::string SnakeServer::buildGameStatePayload() {
         foodJson["icon"] = std::string(1, food.icon);
         foodJson["color"] = food.color;
         gameState["food"].push_back(foodJson);
+    }
+
+    // speed boost
+    gameState["speed_boosts"] = json::array();
+    for (auto & [coords, speedBoost] : speedBoostMap) {
+        json speedBoostJson;
+        speedBoostJson["x"] = speedBoost.x;
+        speedBoostJson["y"] = speedBoost.y;
+        speedBoostJson["icon"] = std::string(1, speedBoost.icon);
+        speedBoostJson["color"] = speedBoost.color;
+        gameState["speed_boosts"].push_back(speedBoostJson);
     }
 
     return gameState.dump();

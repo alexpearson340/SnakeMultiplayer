@@ -85,7 +85,7 @@ void SnakeClient::run() {
 void SnakeClient::render() {
     erase();
     renderArena();
-    renderFood();
+    renderObjects();
     renderPlayers();
     renderScore();
 
@@ -185,9 +185,12 @@ void SnakeClient::renderPlayers() {
     }
 }
 
-void SnakeClient::renderFood() {
+void SnakeClient::renderObjects() {
     for (auto & f : gameState.food) {
         renderCharToScreen(f.x, f.y, f.icon, f.color);
+    }
+    for (auto & s : gameState.speedBoosts) {
+        renderCharToScreen(s.x, s.y, s.icon, s.color);
     }
 }
 

@@ -10,6 +10,11 @@ inline constexpr int ARENA_WIDTH {30};
 inline constexpr int ARENA_HEIGHT {30};
 inline constexpr int CLIENT_HORIZONTAL_SCALING {2};
 inline constexpr int MIN_FOOD_IN_ARENA {3};
+inline constexpr int SPEED_BOOST_PROBABILITY {40};
+inline constexpr int SPEED_BOOST_DURATION_MS {5000};
+inline constexpr float SPEED_BOOST_RATIO {1.5};
+inline constexpr int BOOSTED_MOVEMENT_FREQUENCY_MS {static_cast<int>(MOVEMENT_FREQUENCY_MS * (1 / SPEED_BOOST_RATIO))};
+
 
 namespace SnakeConstants {
     inline const std::string KEY_QUIT = "q";
