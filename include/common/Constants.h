@@ -10,8 +10,8 @@ inline constexpr int ARENA_WIDTH {30};
 inline constexpr int ARENA_HEIGHT {30};
 inline constexpr int CLIENT_HORIZONTAL_SCALING {2};
 inline constexpr int MIN_FOOD_IN_ARENA {3};
-inline constexpr int SPEED_BOOST_PROBABILITY {40};
-inline constexpr int SPEED_BOOST_DURATION_MS {5000};
+inline constexpr int SPEED_BOOST_PROBABILITY {80};
+inline constexpr int SPEED_BOOST_DURATION_MS {8000};
 inline constexpr float SPEED_BOOST_RATIO {1.5};
 inline constexpr int BOOSTED_MOVEMENT_FREQUENCY_MS {static_cast<int>(MOVEMENT_FREQUENCY_MS * (1 / SPEED_BOOST_RATIO))};
 
@@ -27,10 +27,9 @@ namespace SnakeConstants {
 
 enum class Color {
     WHITE = 1,
-    RED = 2,
-    YELLOW = 3,
+    YELLOW = 2,
+    RED = 3,
     GREEN = 4,
-    BLUE = 5,
-    CYAN = 6,
-    MAGENTA = 7,
+    CYAN = 5,
+    MAGENTA = 6,
 };

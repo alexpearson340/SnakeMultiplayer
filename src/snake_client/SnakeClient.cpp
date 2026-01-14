@@ -102,10 +102,9 @@ void SnakeClient::initNcurses() {
     curs_set(0);
     start_color();
     init_pair(static_cast<int>(Color::WHITE), COLOR_WHITE, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::RED), COLOR_RED, COLOR_BLACK);
     init_pair(static_cast<int>(Color::YELLOW), COLOR_YELLOW, COLOR_BLACK);
+    init_pair(static_cast<int>(Color::RED), COLOR_RED, COLOR_BLACK);
     init_pair(static_cast<int>(Color::GREEN), COLOR_GREEN, COLOR_BLACK);
-    init_pair(static_cast<int>(Color::BLUE), COLOR_BLUE, COLOR_BLACK);
     init_pair(static_cast<int>(Color::CYAN), COLOR_CYAN, COLOR_BLACK);
     init_pair(static_cast<int>(Color::MAGENTA), COLOR_MAGENTA, COLOR_BLACK);
 }

@@ -88,7 +88,7 @@ void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
             '^',
             msg.message,
             1,
-            static_cast<Color>((msg.clientId % 6) + 2),
+            static_cast<Color>((msg.clientId % 5) + 2),
             movementFrequencyMs,
             currentGameTick + movementFrequencyMs,
             false,
