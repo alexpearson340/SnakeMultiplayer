@@ -1,8 +1,6 @@
 #include <locale.h>
 #include <ncurses.h>
-#include <chrono>
 #include <cstdlib>
-#include <thread>
 #include "common/Constants.h"
 #include "common/ProtocolMessage.h"
 #include "snake_client/SnakeClient.h"
@@ -69,8 +67,6 @@ void SnakeClient::run() {
         }
         receiveUpdates();
         render();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
 
@@ -101,7 +97,7 @@ void SnakeClient::initNcurses() {
     initscr();
     cbreak();
     noecho();
-    nodelay(stdscr, TRUE);
+    timeout(INPUT_BLOCKING_TIMEOUT_MS);
     keypad(stdscr, TRUE);
     curs_set(0);
     start_color();

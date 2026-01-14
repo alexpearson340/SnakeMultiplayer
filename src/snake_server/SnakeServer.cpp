@@ -109,7 +109,7 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
     }
 
     Player & player {clientIdToPlayerMap.at(msg.clientId)};
-    if (msg.message == SnakeConstants::KEY_QUIT) {
+    if (msg.message == SnakeConstants::PLAYER_KEY_QUIT) {
         running = false;
     }
     else if (msg.message == SnakeConstants::PLAYER_KEY_UP) {

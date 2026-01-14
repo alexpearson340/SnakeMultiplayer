@@ -64,7 +64,7 @@ NetworkServer::NetworkServer(int port)
 std::vector<ProtocolMessage> NetworkServer::pollMessages() {
     std::vector<ProtocolMessage> messages;
     epoll_event events[MAX_EVENTS];
-    int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, EPOLL_BLOCKING_TIMEOUT);
+    int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, EPOLL_BLOCKING_TIMEOUT_MS);
 
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
