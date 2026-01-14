@@ -200,8 +200,9 @@ void SnakeClient::renderObjects() {
 
 void SnakeClient::renderScore() {
     mvprintw(height + 2, 0, "Press 'q' to quit");
+    mvprintw(height + 3, 0, "Press 'r' to reload");
     std::string serverHighScore {"Server high score is " + gameState.serverHighScore.first + ": " + std::to_string(gameState.serverHighScore.second)};
-    mvprintw(height + 3, 0, serverHighScore.c_str());
+    mvprintw(height + 4, 0, serverHighScore.c_str());
     std::vector<client::PlayerData> sortedPlayers {};
     for (auto & [clientId, p] : gameState.players) {
         sortedPlayers.push_back(p);
@@ -211,7 +212,7 @@ void SnakeClient::renderScore() {
     std::sort(sortedPlayers.begin(), sortedPlayers.end(),
         [](const auto & l, const auto & r) {return l.score > r.score;});
 
-    int row = height + 5;
+    int row = height + 6;
     mvprintw(row++, 0, "+----------- SCOREBOARD -----------+");
 
     for (auto & p : sortedPlayers) {
