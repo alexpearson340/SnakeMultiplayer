@@ -25,7 +25,9 @@ private:
 
 inline PlayerNode::PlayerNode(int x, int y)
     : xPos {x}
-    , yPos {y} {
+    , yPos {y} 
+    , prevX {x}
+    , prevY {y} {
 }
 
 inline void PlayerNode::move(int xMove, int yMove) {
@@ -33,13 +35,13 @@ inline void PlayerNode::move(int xMove, int yMove) {
 }
 
 inline void PlayerNode::moveTo(int xMove, int yMove) {
+    prevX = xPos;
+    prevY = yPos;
     xPos = xMove;
     yPos = yMove;
     if (next != nullptr) {
         next->moveTo(prevX, prevY);
     };
-    prevX = xPos;
-    prevY = yPos;
 }
 
 inline void PlayerNode::grow() {

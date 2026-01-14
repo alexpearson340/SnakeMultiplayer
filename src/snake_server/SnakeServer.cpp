@@ -222,10 +222,14 @@ void SnakeServer::checkCollisions() {
         }
         // get food
         else if (foodMap.contains(playerHead)) {
+            std::cout << "Feeding player " << player.name << " at " << "(";
+            std::cout << playerHead.first << ", " << playerHead.second << ")" << std::endl;
             feedPlayer(playerHead, clientId);
         }
         // get speed boost
         else if (speedBoostMap.contains(playerHead)) {
+            std::cout << "Boosting player " << player.name << " at " << "(";
+            std::cout << playerHead.first << ", " << playerHead.second << ")" << std::endl;
             boostPlayer(playerHead, clientId);
         }
 
