@@ -111,11 +111,12 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
 }
 
 void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
-    // todo player placement
+    std::uniform_int_distribution<> distX(1 + 5, width - 1 - 5);
+    std::uniform_int_distribution<> distY(1 + 5, height - 1 - 5);
     clientIdToPlayerMap.emplace(
         msg.clientId,
         Player {
-            PlayerNode{width / 2, height / 2},
+            PlayerNode {distX(gen), distY(gen)},
             '^',
             '^',
             msg.message,
