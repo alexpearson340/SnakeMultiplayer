@@ -1,5 +1,6 @@
 #include "common/Constants.h"
 #include "snake_server/NetworkServer.h"
+#include <spdlog/spdlog.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -22,7 +23,7 @@ NetworkServer::NetworkServer(int port)
     if (serverFd == -1) {
         throw std::runtime_error("Failed to create socket");
     }
-    std::cout << "serverFd=" << serverFd << std::endl;
+    spdlog::info("serverFd=" + std::to_string(serverFd));
 
     // Allow address reuse
     int opt {1};
@@ -52,11 +53,11 @@ NetworkServer::NetworkServer(int port)
         close(serverFd);
         throw std::runtime_error("Failed to create epoll instance");
     }
-    std::cout << "epollFd=" << epollFd << std::endl;
+    spdlog::info("epollFd=" + std::to_string(epollFd));
 
     // Add the server socket to epoll
     registerFdWithEpoll(serverFd);
-    std::cout << "Server listening on port " << port << std::endl;
+    spdlog::info("Server listening on port " + std::to_string(port));
 }
 
 std::vector<ProtocolMessage> NetworkServer::pollMessages() {
@@ -116,7 +117,7 @@ void NetworkServer::acceptNewClient() {
         clientIdToFdMap[clientId] = clientFd;
         fdToBufferMap[clientFd] = "";
 
-        std::cout << "Client " << clientId << " connected (fd: " << clientFd << ")" << std::endl;
+        spdlog::info("Client " + std::to_string(clientId) + " connected (fd: " + std::to_string(clientFd) + ")");
     }
 }
 
@@ -126,7 +127,7 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
 
     if (bytesRead <= 0) {
         // Connection closed or error
-        std::cout << "Client disconnected (fd: " << fd << ")" << std::endl;
+        spdlog::info("Client disconnected (fd: " + std::to_string(fd) + ")");
 
         ProtocolMessage msg;
         msg.messageType = MessageType::CLIENT_DISCONNECT;

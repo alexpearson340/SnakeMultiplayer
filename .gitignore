@@ -1,9 +1,6 @@
 .cache
 .vscode
 build
+*.log
 compile_commands.json
-+patches/
-*patch*/
-screenshots/
 .DS_Store
-CLAUDE.md

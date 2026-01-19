@@ -16,6 +16,13 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(json)
 
+FetchContent_Declare(
+    spdlog
+    GIT_REPOSITORY https://github.com/gabime/spdlog.git
+    GIT_TAG v1.14.1
+)
+FetchContent_MakeAvailable(spdlog)
+
 # CLIENT LIB
 add_library(
     snake_client_lib STATIC
@@ -49,6 +56,7 @@ target_include_directories(
 
 target_link_libraries(
     snake_server_lib
+    spdlog::spdlog
     nlohmann_json::nlohmann_json
 )
 
