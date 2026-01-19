@@ -10,7 +10,8 @@ SnakeBot::SnakeBot(const int width, const int height)
     , clientId {-1}
     , gen {std::random_device{}()}
     , network(getServerIp(), getServerPort())
-    , gameState {} {    
+    , gameState {}
+    , pathfinder {width, height} {    
 }
 
 void SnakeBot::run() {
@@ -84,19 +85,27 @@ void SnakeBot::handleGameStateMessage(const ProtocolMessage & msg) {
 }
 
 void SnakeBot::buildArenaMap() {
-
+    pathfinder.rebuildMap(gameState);
 }
 
 void SnakeBot::sendInput() {
-    // todo non random input
     if (clientId != -1) {
-        std::vector<char> possibleDirections {'<', '^', '>', 'v'};
-        std::uniform_int_distribution<> dist (1, 4);
-        char input {possibleDirections[dist(gen) - 1]};
+        // char input {calculateRandomMove(clientId)};
+        const char input {calculatePathingMove(clientId)};
         network.sendToServer(protocol::toString(ProtocolMessage {
             MessageType::CLIENT_INPUT,
             clientId,
             std::string(1, input)
         }));
     }
+}
+
+const char SnakeBot::calculateRandomMove(const int clientId) {
+    std::vector<char> possibleDirections {'<', '^', '>', 'v'};
+    std::uniform_int_distribution<> dist (1, 4);
+    return possibleDirections[dist(gen) - 1];
+}
+
+const char SnakeBot::calculatePathingMove(const int clientId) const {
+    return pathfinder.calculateNextMove(clientId, gameState);
 }

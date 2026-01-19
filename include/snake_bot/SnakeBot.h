@@ -3,6 +3,7 @@
 #include <random>
 #include "snake_client/GameState.h"
 #include "snake_client/NetworkClient.h"
+#include "snake_bot/Pathfinder.h"
 
 class SnakeBot {
 public:
@@ -17,6 +18,8 @@ private:
     void handleGameStateMessage(const ProtocolMessage & msg);
     void buildArenaMap();
     void sendInput();
+    const char calculateRandomMove(const int);
+    const char calculatePathingMove(const int) const;
 
     int width;
     int height;
@@ -26,4 +29,5 @@ private:
     std::mt19937 gen;
     NetworkClient network;
     client::GameState gameState;
+    Pathfinder pathfinder;
 };
