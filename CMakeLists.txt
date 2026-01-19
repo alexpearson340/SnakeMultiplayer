@@ -52,6 +52,23 @@ target_link_libraries(
     nlohmann_json::nlohmann_json
 )
 
+# BOT LIB
+add_library(
+    snake_bot_lib STATIC
+    src/snake_bot/SnakeBot.cpp
+)
+
+target_include_directories(
+    snake_bot_lib PUBLIC
+    include
+)
+
+target_link_libraries(
+    snake_bot_lib
+    snake_client_lib
+    nlohmann_json::nlohmann_json
+)
+
 # CLIENT EXECUTABLE
 add_executable(
     snake_client
@@ -73,6 +90,18 @@ target_link_libraries(
     snake_server
     snake_server_lib
 )
+
+# BOT EXECUTABLE
+add_executable(
+    snake_bot
+    src/snake_bot/main.cpp
+)
+
+target_link_libraries(
+    snake_bot
+    snake_bot_lib
+)
+
 # copy compile_commands.json to project root
 add_custom_target(
     copy-compile-commands ALL

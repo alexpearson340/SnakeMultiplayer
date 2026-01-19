@@ -5,16 +5,6 @@
 #include "common/ProtocolMessage.h"
 #include "snake_client/SnakeClient.h"
 
-static const char* getServerIp() {
-    const char* ip = getenv("SNAKE_SERVER_IP");
-    return ip ? ip : "127.0.0.1";
-}
-
-static int getServerPort() {
-    const char* port = getenv("SNAKE_SERVER_PORT");
-    return port ? std::atoi(port) : SERVER_PORT;
-}
-
 SnakeClient::SnakeClient(int width, int height)
     : width {width}
     , height {height}
