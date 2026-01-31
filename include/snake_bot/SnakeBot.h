@@ -26,7 +26,6 @@ private:
     int width;
     int height;
     bool awaitingJoin;
-    bool isAlive;
     int clientId;
     Timer timer;
     std::mt19937 gen;

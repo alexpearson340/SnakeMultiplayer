@@ -4,7 +4,6 @@ SnakeBot::SnakeBot(const int width, const int height)
     : width {width}
     , height {height}
     , awaitingJoin {false}
-    , isAlive {false}
     , clientId {-1}
     , gen {std::random_device{}()}
     , network(getServerIp(), getServerPort())
@@ -15,12 +14,13 @@ SnakeBot::SnakeBot(const int width, const int height)
 void SnakeBot::run() {
     while (true) {
         timer.tick();
-        if (!isAlive && !awaitingJoin) {
+        if (clientId == -1 && !awaitingJoin) {
             createBot();
         }
         receiveUpdates();
-        buildArenaMap();
-        sendInput();
+        if (clientId == -1) {
+            sendInput();
+        }
     }
 }
 
@@ -36,7 +36,7 @@ void SnakeBot::joinGame() {
 
     network.joinBot(protocol::toString(ProtocolMessage{
         MessageType::CLIENT_JOIN,
-        clientId,
+        -1,
         username
     }));
     spdlog::info("Sent join game request for " + std::string(username, 3));
@@ -71,16 +71,16 @@ void SnakeBot::handleServerWelcome(const ProtocolMessage & msg) {
     spdlog::info("Received server welcome for clientId=" + std::to_string(msg.clientId));
     clientId = msg.clientId;
     awaitingJoin = false;
-    isAlive = true;
 }
 
 void SnakeBot::handleGameStateMessage(const ProtocolMessage & msg) {
     gameState = client::parseGameState(msg.message);
-    if (!gameState.players.contains(clientId)) {
+    if (clientId != -1 && !gameState.players.contains(clientId)) {
+        // this means that we just died
         network.destroyBot(clientId);
         clientId = -1;
-        isAlive = false;
     }
+    buildArenaMap();
 }
 
 void SnakeBot::buildArenaMap() {
@@ -88,7 +88,7 @@ void SnakeBot::buildArenaMap() {
 }
 
 void SnakeBot::sendInput() {
-    if (clientId != -1 && gameState.players.contains(clientId)) {
+    if (gameState.players.contains(clientId)) {
         // char input {calculateRandomMove(clientId)};
         const char input {calculatePathingMove(clientId)};
         network.sendToServer(

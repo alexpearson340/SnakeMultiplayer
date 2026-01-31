@@ -27,7 +27,7 @@ inline void Timer::tick() {
     engineLoopCounter++;
     currentGameTick = std::chrono::steady_clock::now();
     if (currentGameTick - previousStatTick > std::chrono::seconds(STATS_FREQUENCY_SECONDS)) {
-        spdlog::info("IPS=" + std::to_string(engineLoopCounter / STATS_FREQUENCY_SECONDS));
+        spdlog::debug("IPS=" + std::to_string(engineLoopCounter / STATS_FREQUENCY_SECONDS));
         engineLoopCounter = 0;
         previousStatTick = currentGameTick;
     }

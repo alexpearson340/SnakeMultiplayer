@@ -61,7 +61,7 @@ void SnakeServer::run() {
 }
 
 void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
-    spdlog::info("New client joined: " + msg.message);
+    spdlog::info("Received client join request from " + msg.message);
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
@@ -71,6 +71,8 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
         ""
     };
     network.sendToClient(msg.clientId, protocol::toString(serverWelcomeMessage));
+    spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
+    spdlog::info("Sent client welcome to " + msg.message);
 }
 
 void SnakeServer::handleClientDisconnect(const ProtocolMessage & msg) {
