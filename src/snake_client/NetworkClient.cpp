@@ -28,6 +28,10 @@ void NetworkClient::connectToServer(const std::string& host, int port) {
     }
     spdlog::info("New client serverFd=" + std::to_string(serverFd));
 
+    // allow address reuse
+    int opt {1};
+    setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
+    
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
