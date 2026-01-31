@@ -362,7 +362,7 @@ std::string SnakeServer::buildGameStatePayload() {
 }
 
 void SnakeServer::logGameState() {
-    spdlog::info("Game state: " + buildGameStatePayload());
+    spdlog::debug("Game state: " + buildGameStatePayload());
 }
 
 void SnakeServer::logOccupiedCells() {
@@ -375,7 +375,7 @@ void SnakeServer::logOccupiedCells() {
         }
         msg += "}";
     }
-    spdlog::info(msg);
+    spdlog::debug(msg);
 
     msg = "";
     msg += "Occupied cells (heads):";
@@ -386,5 +386,5 @@ void SnakeServer::logOccupiedCells() {
         }
         msg += "}";
     }
-    spdlog::info(msg);
+    spdlog::debug(msg);
 }

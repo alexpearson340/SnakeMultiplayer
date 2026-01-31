@@ -38,6 +38,7 @@ target_include_directories(
 
 target_link_libraries(
     snake_client_lib
+    spdlog::spdlog
     nlohmann_json::nlohmann_json
     ${CURSES_LIBRARIES}
 )
