@@ -5,6 +5,7 @@
 #include <random>
 #include <unordered_set>
 #include "common/Hash.h"
+#include "common/Timer.h"
 #include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
 
@@ -39,7 +40,7 @@ private:
     std::chrono::milliseconds movementFrequencyMs;
     std::chrono::milliseconds boostedMovementFrequencyMs;
     std::chrono::milliseconds boostDurationMs;
-    std::chrono::time_point<std::chrono::steady_clock> currentGameTick;
+    Timer timer;
     std::mt19937 gen;
     std::pair <std::string, int> serverHighScore;
 

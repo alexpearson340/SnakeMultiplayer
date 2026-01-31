@@ -16,6 +16,7 @@ SnakeBot::SnakeBot(const int width, const int height)
 
 void SnakeBot::run() {
     while (true) {
+        timer.tick();
         if (!isAlive && !awaitingJoin) {
             createBot();
         }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/Timer.h"
 #include "snake_client/GameState.h"
 #include "snake_client/NetworkClient.h"
 
@@ -31,6 +32,7 @@ private:
     bool playing;
     int score;
 
+    Timer timer;
     NetworkClient network;
     int clientId;
     char playerInput;

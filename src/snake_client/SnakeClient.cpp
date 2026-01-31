@@ -11,6 +11,7 @@ SnakeClient::SnakeClient(int width, int height)
     , running {true}
     , playing {false}
     , score {0}
+    , timer {}
     , network(getServerIp(), getServerPort())
     , clientId(-1)
     , playerInput('\0')
@@ -25,6 +26,7 @@ void SnakeClient::run() {
     initNcurses();
     joinGame();
     while (running) {
+        timer.tick();
         handleInput();
 
         if (playing && playerInput != '\0') {

@@ -12,7 +12,7 @@ SnakeServer::SnakeServer(int width, int height)
     , movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS))
     , boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS))
     , boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS))
-    , currentGameTick(std::chrono::steady_clock::now())
+    , timer {}
     , gen {std::random_device{}()}
     , serverHighScore {}
     , network {SERVER_PORT}
@@ -25,7 +25,7 @@ SnakeServer::SnakeServer(int width, int height)
 
 void SnakeServer::run() {
     while (true) {
-        currentGameTick = std::chrono::steady_clock::now();
+        timer.tick();
         replaceFood();
         std::vector<ProtocolMessage> messages { network.pollMessages() };
         bool stateChanged = false;
@@ -124,9 +124,9 @@ void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
             1,
             static_cast<Color>((msg.clientId % 5) + 2),
             movementFrequencyMs,
-            currentGameTick + movementFrequencyMs,
+            timer.currentTick() + movementFrequencyMs,
             false,
-            currentGameTick
+            timer.currentTick()
         }
     );
 }
@@ -138,11 +138,11 @@ bool SnakeServer::updateSnakes() {
     occupiedCellsBodies.clear();
     occupiedCellsHeads.clear();
     for (auto & [clientId, player] : clientIdToPlayerMap) {
-        if (player.boosted && player.boostExpireTime <= currentGameTick) {
+        if (player.boosted && player.boostExpireTime <= timer.currentTick()) {
             player.boosted = false;
             player.movementFrequencyMs = movementFrequencyMs;
         }
-        if (currentGameTick >= player.nextMoveTime) {
+        if (timer.currentTick() >= player.nextMoveTime) {
             moveSnake(clientId);
             snakeUpdates = true;
         }
@@ -170,7 +170,7 @@ void SnakeServer::moveSnake(const int clientId) {
         default:
             throw std::runtime_error("Invalid direction: " + std::string(1, player.direction));
     }
-    player.nextMoveTime = currentGameTick + player.movementFrequencyMs;
+    player.nextMoveTime = timer.currentTick() + player.movementFrequencyMs;
 }
 
 void SnakeServer::updateOccupiedCells(const int clientId) {
@@ -272,7 +272,7 @@ void SnakeServer::feedPlayer(std::pair<int, int> & playerCell, const int clientI
 void SnakeServer::boostPlayer(std::pair<int, int> & playerCell, const int clientId) {
     clientIdToPlayerMap.at(clientId).boosted = true;
     clientIdToPlayerMap.at(clientId).movementFrequencyMs = boostedMovementFrequencyMs;
-    clientIdToPlayerMap.at(clientId).boostExpireTime = currentGameTick + boostDurationMs;
+    clientIdToPlayerMap.at(clientId).boostExpireTime = timer.currentTick() + boostDurationMs;
     speedBoostMap.erase(playerCell);
 }
 

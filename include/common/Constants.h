@@ -17,6 +17,7 @@ inline constexpr int SPEED_BOOST_DURATION_MS {8000};
 inline constexpr float SPEED_BOOST_RATIO {1.5};
 inline constexpr int BOOSTED_MOVEMENT_FREQUENCY_MS {static_cast<int>(MOVEMENT_FREQUENCY_MS * (1 / SPEED_BOOST_RATIO))};
 
+inline constexpr int STATS_FREQUENCY_SECONDS {3};
 inline constexpr int LOGGING_FLUSH_INTERVAL_SECONDS {3};
 inline std::string LOGGING_FORMAT {"[%Y-%m-%d %H:%M:%S.%f] [{}] [%l] %v"};
 
