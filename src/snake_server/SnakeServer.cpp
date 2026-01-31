@@ -1,6 +1,6 @@
 #include <stdexcept>
 #include <chrono>
-#include <spdlog/spdlog.h>
+#include "common/Log.h"
 #include <string>
 #include "common/Constants.h"
 #include "common/Json.h"
@@ -38,7 +38,6 @@ void SnakeServer::run() {
                     break;
                 case MessageType::CLIENT_INPUT:
                     handleClientInput(msg);
-                    stateChanged = true;
                     break;
                 case MessageType::CLIENT_DISCONNECT:
                     handleClientDisconnect(msg);

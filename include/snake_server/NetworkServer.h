@@ -13,6 +13,7 @@ public:
     void broadcast(std::string_view);
 
 private:
+    void startServer(int);
     void setNonBlocking(int fd);
     void registerFdWithEpoll(int fd);
     void acceptNewClient();

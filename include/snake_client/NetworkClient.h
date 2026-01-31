@@ -19,6 +19,7 @@ public:
     NetworkClient(const std::string& host, int port);
     ~NetworkClient();
 
+    int getServerFd() const {return serverFd;};
     void sendToServer(std::string_view msg);
     std::vector<ProtocolMessage> receiveFromServer();
 

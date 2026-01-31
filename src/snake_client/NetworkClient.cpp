@@ -1,4 +1,5 @@
 #include "snake_client/NetworkClient.h"
+#include "common/Log.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -25,6 +26,7 @@ void NetworkClient::connectToServer(const std::string& host, int port) {
     if (serverFd == -1) {
         throw std::runtime_error("Failed to create socket");
     }
+    spdlog::info("New client serverFd=" + std::to_string(serverFd));
 
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;

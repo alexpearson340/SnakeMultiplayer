@@ -64,6 +64,7 @@ target_link_libraries(
 # BOT LIB
 add_library(
     snake_bot_lib STATIC
+    src/snake_bot/BotNetwork.cpp
     src/snake_bot/SnakeBot.cpp
     src/snake_bot/Pathfinder.cpp
 )

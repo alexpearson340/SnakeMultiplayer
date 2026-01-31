@@ -11,4 +11,5 @@ inline void initLogging(std::string applicationName) {
     spdlog::flush_every(std::chrono::seconds(LOGGING_FLUSH_INTERVAL_SECONDS));
     spdlog::set_pattern(fmt::format(fmt::runtime(LOGGING_FORMAT), applicationName));
     spdlog::info("Starting " + applicationName);
+    spdlog::default_logger()->flush();
 }

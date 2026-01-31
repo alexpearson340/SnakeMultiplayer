@@ -1,6 +1,6 @@
 #include "common/Constants.h"
+#include "common/Log.h"
 #include "snake_server/NetworkServer.h"
-#include <spdlog/spdlog.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -17,7 +17,10 @@ NetworkServer::NetworkServer(int port)
     , fdToClientIdMap {}
     , clientIdToFdMap {}
     , fdToBufferMap {} {
+    startServer(port);
+}
 
+void NetworkServer::startServer(int port) {
     // Create socket
     serverFd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverFd == -1) {

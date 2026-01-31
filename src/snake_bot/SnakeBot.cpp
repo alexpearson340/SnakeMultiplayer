@@ -1,5 +1,3 @@
-#include <chrono>
-#include <thread>
 #include "snake_bot/SnakeBot.h"
 
 SnakeBot::SnakeBot(const int width, const int height) 
@@ -23,9 +21,6 @@ void SnakeBot::run() {
         receiveUpdates();
         buildArenaMap();
         sendInput();
-
-        // todo remove this when we wait responsively on server socket input
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
@@ -35,19 +30,20 @@ void SnakeBot::createBot() {
 }
 
 void SnakeBot::joinGame() {
-    const char * username = getenv("USER");
+    const char * username = "bot";
     if (!username) username = "unknown";
+    spdlog::info("Sending join game request as " + std::string(username, 3));
 
-    ProtocolMessage clientJoinMessage {
+    network.joinBot(protocol::toString(ProtocolMessage{
         MessageType::CLIENT_JOIN,
         clientId,
         username
-    };
-    network.sendToServer(protocol::toString(clientJoinMessage));
+    }));
+    spdlog::info("Sent join game request for " + std::string(username, 3));
 }
 
 void SnakeBot::receiveUpdates() {
-    std::vector<ProtocolMessage> messages {network.receiveFromServer()};
+    std::vector<ProtocolMessage> messages {network.pollMessages()};
     ProtocolMessage * latestGameState {nullptr};
 
     for (auto & msg : messages) {
@@ -72,6 +68,7 @@ void SnakeBot::receiveUpdates() {
 }
 
 void SnakeBot::handleServerWelcome(const ProtocolMessage & msg) {
+    spdlog::info("Received server welcome for clientId=" + std::to_string(msg.clientId));
     clientId = msg.clientId;
     awaitingJoin = false;
     isAlive = true;
@@ -80,6 +77,7 @@ void SnakeBot::handleServerWelcome(const ProtocolMessage & msg) {
 void SnakeBot::handleGameStateMessage(const ProtocolMessage & msg) {
     gameState = client::parseGameState(msg.message);
     if (!gameState.players.contains(clientId)) {
+        network.destroyBot(clientId);
         clientId = -1;
         isAlive = false;
     }
@@ -90,14 +88,17 @@ void SnakeBot::buildArenaMap() {
 }
 
 void SnakeBot::sendInput() {
-    if (clientId != -1) {
+    if (clientId != -1 && gameState.players.contains(clientId)) {
         // char input {calculateRandomMove(clientId)};
         const char input {calculatePathingMove(clientId)};
-        network.sendToServer(protocol::toString(ProtocolMessage {
-            MessageType::CLIENT_INPUT,
+        network.sendToServer(
             clientId,
-            std::string(1, input)
-        }));
+            protocol::toString(ProtocolMessage {
+                MessageType::CLIENT_INPUT,
+                clientId,
+                std::string(1, input)
+            })
+        );
     }
 }
 

@@ -1,6 +1,5 @@
 #include "snake_bot/Pathfinder.h"
 #include <climits>
-#include <iostream>
 
 Pathfinder::Pathfinder(const int width, const int height)
     : width {width}
