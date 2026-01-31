@@ -67,7 +67,6 @@ void BotNetwork::destroyBot(const int clientId) {
     int fd {clientIdToFdMap.at(clientId)};
     // Remove from epoll
     epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
-    close(fd);
     fdToNetworkClientMap.erase(fd);
     clientIdToFdMap.erase(clientId);
 }
