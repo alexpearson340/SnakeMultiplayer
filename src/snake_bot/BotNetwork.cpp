@@ -28,7 +28,7 @@ void BotNetwork::joinBot(const std::string & clientJoinMessage) {
     int fd {newNetworkClient->getServerFd()};
 
     epoll_event event;
-    event.events = EPOLLIN | EPOLLET;    // edge triggered
+    event.events = EPOLLIN;
     event.data.fd = fd;
     if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
         close(epollFd);
@@ -63,6 +63,7 @@ std::vector<ProtocolMessage> BotNetwork::pollMessages() {
 }
 
 void BotNetwork::destroyBot(const int clientId) {
+    spdlog::info("Destroying clientId=" + std::to_string(clientId));
     int fd {clientIdToFdMap.at(clientId)};
     // Remove from epoll
     epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);

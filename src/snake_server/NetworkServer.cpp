@@ -93,7 +93,7 @@ void NetworkServer::setNonBlocking(int fd) {
 
 void NetworkServer::registerFdWithEpoll(int fd) {
     epoll_event event;
-    event.events = EPOLLIN | EPOLLET;  // Edge-triggered
+    event.events = EPOLLIN;
     event.data.fd = fd;
     if (epoll_ctl(epollFd, EPOLL_CTL_ADD, fd, &event) == -1) {
         close(epollFd);
