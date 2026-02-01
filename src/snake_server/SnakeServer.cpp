@@ -206,16 +206,26 @@ void SnakeServer::checkCollisions() {
             clientIdsToDestroy.push_back(clientId);
         }
 
-        // collision with a snake body segment
+        // collision with another snake's body
         else if (occupiedCellsBodies.contains(playerHead)) {
             spdlog::info("Destroying " + player.name + " due to snake body collision");
             clientIdsToDestroy.push_back(clientId);
         }
 
-        // collision with a different snake's head
-        else if (occupiedCellsHeads.contains(playerHead) && occupiedCellsHeads.at(playerHead).size() > 1) {
-            spdlog::info("Destroying " + player.name + " due to snake head collision");
-            clientIdsToDestroy.push_back(clientId);
+        // head-on-head snake collision - whoever arrived into the cell first survives
+        else if (occupiedCellsHeads.at(playerHead).size() > 1) {
+            int firstPlayerinCell {*std::min_element(
+                occupiedCellsHeads.at(playerHead).begin(),
+                occupiedCellsHeads.at(playerHead).end(),
+                // Checking who was first in the cell based on nextMoveTime is slightly imperfect.
+                // A client with a faster move speed can arrive later and still have a lower nextMoveTime.
+                // This is probably good enough though
+                [this] (const int a, const int b) {return clientIdToPlayerMap.at(a).nextMoveTime < clientIdToPlayerMap.at(b).nextMoveTime;}
+            )};
+            if (clientId != firstPlayerinCell) {
+                spdlog::info("Destroying " + player.name + " due to snake head collision");
+                clientIdsToDestroy.push_back(clientId);
+            }
         }
 
         // get food

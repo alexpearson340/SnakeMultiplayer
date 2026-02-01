@@ -8,7 +8,6 @@
 #include <fcntl.h>
 #include <cstring>
 #include <stdexcept>
-#include <iostream>
 
 NetworkServer::NetworkServer(int port)
     : serverFd {-1}
@@ -109,7 +108,7 @@ void NetworkServer::acceptNewClient() {
     // Accept the connection - get a new fd for this client
     int clientFd = accept(serverFd, (sockaddr*)&clientAddr, &addrLen);
     if (clientFd == -1) {
-        std::cerr << "Accept new client connection failed" << std::endl;
+        spdlog::error("Accept failed");
     }
     else {
         setNonBlocking(clientFd);

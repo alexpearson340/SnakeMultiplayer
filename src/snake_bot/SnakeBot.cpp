@@ -18,7 +18,7 @@ void SnakeBot::run() {
             createBot();
         }
         receiveUpdates();
-        if (clientId == -1) {
+        if (clientId != -1) {
             sendInput();
         }
     }
