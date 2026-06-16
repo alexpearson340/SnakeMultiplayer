@@ -19,7 +19,7 @@ Eat `@` to grow your snake and increase your score. Eat `*` for a speed boost. A
 - **Single-threaded event loop** on the server, driven by Linux `epoll` (level-triggered) over non-blocking TCP sockets - accept, recv and send all multiplex through one fd table with no threads or locks.
 - **State-change-driven broadcasts**: the server only emits `GAME_STATE` when input or movement actually changes the game state, minimising idle cycles.
 - **Per-snake movement clocks** instead of a fixed global tick each `Player` carries its own `nextMoveTime` and `movementFrequencyMs`, so speed boosts simply shorten that interval without being coupled to the engine cadence.
-- **Reverse-Dijkstra pathing**: `BotNetwork` builds a distance field from every food source over the arena graph (snake bodies are obstacles), then walks to the neighbour with the smallest distance - O(W·H) per tick.
+- **Reverse-Dijkstra pathing**: `BotNetwork` and `Pathfinder` builds a distance field from every food source over the arena graph (snake bodies are obstacles), then walks to the neighbour with the smallest distance - O(W·H) per tick.
 
 ## Protocol
 
@@ -56,3 +56,4 @@ sequenceDiagram
 - **Different transport protocols for different message types**: keep player connections, joins and inputs on TCP (lossiness not okay), but use UDP multicast for `GAME_STATE` - trading reliability for lower latency on the high-volume path.
 - **Snapshot + incremental updates**: stop broadcasting the full game state every tick. Emit deltas with a periodic full snapshot for new joiners and gap recovery (eg market data dissemination).
 - **Deterministic replay from sequenced messages**: assign a monotonic sequence number to every `CLIENT_INPUT` and persist them to a log - replaying the same byte stream into a fresh engine reproduces the exact game state.
+- **Server send backpressure**: the `NetworkServer` currently calls `send()` without response checking. A slow receiver backing up the socket buffer would truncate or drop messages. The fix could be a per-client outbound buffer flushed on `EPOLLOUT`, with an eventual disconnection policy.
