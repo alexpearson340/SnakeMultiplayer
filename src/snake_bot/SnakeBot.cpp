@@ -1,15 +1,14 @@
 #include "snake_bot/SnakeBot.h"
 
-SnakeBot::SnakeBot(const int width, const int height) 
-    : width {width}
-    , height {height}
-    , awaitingJoin {false}
-    , clientId {-1}
-    , gen {std::random_device{}()}
-    , network(getServerIp(), getServerPort())
-    , gameState {}
-    , pathfinder {width, height} {    
-}
+SnakeBot::SnakeBot(const int width, const int height)
+    : width {width},
+      height {height},
+      awaitingJoin {false},
+      clientId {-1},
+      gen {std::random_device {}()},
+      network(getServerIp(), getServerPort()),
+      gameState {},
+      pathfinder {width, height} {}
 
 void SnakeBot::run() {
     while (true) {
@@ -31,14 +30,11 @@ void SnakeBot::createBot() {
 
 void SnakeBot::joinGame() {
     const char * username = "bot";
-    if (!username) username = "unknown";
+    if (!username)
+        username = "unknown";
     spdlog::info("Sending join game request as " + std::string(username, 3));
 
-    network.joinBot(protocol::toString(ProtocolMessage{
-        MessageType::CLIENT_JOIN,
-        -1,
-        username
-    }));
+    network.joinBot(protocol::toString(ProtocolMessage {MessageType::CLIENT_JOIN, -1, username}));
     spdlog::info("Sent join game request for " + std::string(username, 3));
 }
 
@@ -48,14 +44,14 @@ void SnakeBot::receiveUpdates() {
 
     for (auto & msg : messages) {
         switch (msg.messageType) {
-            case MessageType::SERVER_WELCOME:
-                handleServerWelcome(msg);
-                break;
-            case MessageType::GAME_STATE:
-                latestGameState = &msg;
-                break;
-            default:
-                throw std::runtime_error("Invalid MessageType");
+        case MessageType::SERVER_WELCOME:
+            handleServerWelcome(msg);
+            break;
+        case MessageType::GAME_STATE:
+            latestGameState = &msg;
+            break;
+        default:
+            throw std::runtime_error("Invalid MessageType");
         }
     }
 
@@ -92,19 +88,13 @@ void SnakeBot::sendInput() {
         // char input {calculateRandomMove(clientId)};
         const char input {calculatePathingMove(clientId)};
         network.sendToServer(
-            clientId,
-            protocol::toString(ProtocolMessage {
-                MessageType::CLIENT_INPUT,
-                clientId,
-                std::string(1, input)
-            })
-        );
+            clientId, protocol::toString(ProtocolMessage {MessageType::CLIENT_INPUT, clientId, std::string(1, input)}));
     }
 }
 
 const char SnakeBot::calculateRandomMove(const int clientId) {
     std::vector<char> possibleDirections {'<', '^', '>', 'v'};
-    std::uniform_int_distribution<> dist (1, 4);
+    std::uniform_int_distribution<> dist(1, 4);
     return possibleDirections[dist(gen) - 1];
 }
 

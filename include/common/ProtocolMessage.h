@@ -1,15 +1,15 @@
 #pragma once
 
-#include <string>
 #include "common/Json.h"
+#include <string>
 
 enum class MessageType {
-    CLIENT_CONNECT,        // first contact between client and server
-    CLIENT_DISCONNECT,     // end of contact between client and server
-    CLIENT_JOIN,           // client to server, introduces the client
-    SERVER_WELCOME,        // server acknowledgement of client join
-    CLIENT_INPUT,          // client input of actions to server
-    GAME_STATE             // server broadcast of game state out to clients
+    CLIENT_CONNECT,    // first contact between client and server
+    CLIENT_DISCONNECT, // end of contact between client and server
+    CLIENT_JOIN,       // client to server, introduces the client
+    SERVER_WELCOME,    // server acknowledgement of client join
+    CLIENT_INPUT,      // client input of actions to server
+    GAME_STATE         // server broadcast of game state out to clients
 };
 
 struct ProtocolMessage {
@@ -22,20 +22,13 @@ namespace protocol {
 
     inline std::string toString(const ProtocolMessage & msg) {
         json j {
-            {"message_type", static_cast<int>(msg.messageType)},
-            {"client_id", msg.clientId},
-            {"message", msg.message}
-        };
+            {"message_type", static_cast<int>(msg.messageType)}, {"client_id", msg.clientId}, {"message", msg.message}};
         return j.dump() + '\n';
     }
 
     inline ProtocolMessage fromString(const std::string_view str) {
         json j = json::parse(str);
-        return {
-            static_cast<MessageType>(j["message_type"]),
-            j["client_id"],
-            j["message"]
-        };
+        return {static_cast<MessageType>(j["message_type"]), j["client_id"], j["message"]};
     }
 
     inline ProtocolMessage fromString(const std::string_view str, int clientId) {
@@ -44,4 +37,4 @@ namespace protocol {
         return pm;
     };
 
-};
+}; // namespace protocol

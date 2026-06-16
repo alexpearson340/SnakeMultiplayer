@@ -1,17 +1,14 @@
 #include "snake_client/NetworkClient.h"
 #include "common/Log.h"
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdexcept>
 #include <cstring>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <stdexcept>
+#include <sys/socket.h>
+#include <unistd.h>
 
-NetworkClient::NetworkClient(const std::string& host, int port)
-    : serverFd{-1}
-    , connected{false}
-    , messageBuffer {} {
+NetworkClient::NetworkClient(const std::string & host, int port) : serverFd {-1}, connected {false}, messageBuffer {} {
     connectToServer(host, port);
 }
 
@@ -21,7 +18,7 @@ NetworkClient::~NetworkClient() {
     }
 }
 
-void NetworkClient::connectToServer(const std::string& host, int port) {
+void NetworkClient::connectToServer(const std::string & host, int port) {
     serverFd = socket(AF_INET, SOCK_STREAM, 0);
     if (serverFd == -1) {
         throw std::runtime_error("Failed to create socket");
@@ -31,7 +28,7 @@ void NetworkClient::connectToServer(const std::string& host, int port) {
     // allow address reuse
     int opt {1};
     setsockopt(serverFd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    
+
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
@@ -41,7 +38,7 @@ void NetworkClient::connectToServer(const std::string& host, int port) {
         throw std::runtime_error("Invalid address: " + host);
     }
 
-    if (connect(serverFd, (struct sockaddr*)&serverAddr, sizeof(serverAddr)) < 0) {
+    if (connect(serverFd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
         close(serverFd);
         throw std::runtime_error("Connection failed to " + host + ":" + std::to_string(port));
     }
@@ -95,7 +92,7 @@ std::vector<ProtocolMessage> NetworkClient::receiveFromServer() {
     return parseReceivedPacket(buffer, bytesRead);
 }
 
-std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char* buffer, size_t size) {
+std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char * buffer, size_t size) {
     std::vector<ProtocolMessage> messages {};
     messageBuffer += std::string(buffer, size);
     size_t pos;

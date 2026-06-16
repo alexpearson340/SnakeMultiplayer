@@ -1,9 +1,9 @@
-#include <string>
+#include <common/Constants.h>
 #include <spdlog/fmt/fmt.h>
-#include <spdlog/spdlog.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_sinks.h>
-#include <common/Constants.h>
+#include <spdlog/spdlog.h>
+#include <string>
 
 inline void initLogging(std::string applicationName, bool fileLogging, bool stdoutLogging) {
     std::vector<spdlog::sink_ptr> sinks;

@@ -1,50 +1,49 @@
-#include <stdexcept>
-#include <chrono>
-#include "common/Log.h"
-#include <string>
+#include "snake_server/SnakeServer.h"
 #include "common/Constants.h"
 #include "common/Json.h"
-#include "snake_server/SnakeServer.h"
+#include "common/Log.h"
+#include <chrono>
+#include <stdexcept>
+#include <string>
 
 SnakeServer::SnakeServer(int width, int height)
-    : width {width}
-    , height {height}
-    , movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS))
-    , boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS))
-    , boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS))
-    , timer {}
-    , gen {std::random_device{}()}
-    , serverHighScore {}
-    , network {SERVER_PORT}
-    , clientIdToPlayerMap {}
-    , occupiedCellsBodies {}
-    , occupiedCellsHeads {}
-    , foodMap {}
-    , speedBoostMap {} {
-}
+    : width {width},
+      height {height},
+      movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS)),
+      boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS)),
+      boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS)),
+      timer {},
+      gen {std::random_device {}()},
+      serverHighScore {},
+      network {SERVER_PORT},
+      clientIdToPlayerMap {},
+      occupiedCellsBodies {},
+      occupiedCellsHeads {},
+      foodMap {},
+      speedBoostMap {} {}
 
 void SnakeServer::run() {
     while (true) {
         timer.tick();
         replaceFood();
-        std::vector<ProtocolMessage> messages { network.pollMessages() };
+        std::vector<ProtocolMessage> messages {network.pollMessages()};
         bool stateChanged = false;
 
         for (auto msg : messages) {
             switch (msg.messageType) {
-                case MessageType::CLIENT_JOIN:
-                    handleClientJoin(msg);
-                    stateChanged = true;
-                    break;
-                case MessageType::CLIENT_INPUT:
-                    handleClientInput(msg);
-                    break;
-                case MessageType::CLIENT_DISCONNECT:
-                    handleClientDisconnect(msg);
-                    stateChanged = true;
-                    break;
-                default:
-                    throw std::runtime_error("Invalid MessageType");
+            case MessageType::CLIENT_JOIN:
+                handleClientJoin(msg);
+                stateChanged = true;
+                break;
+            case MessageType::CLIENT_INPUT:
+                handleClientInput(msg);
+                break;
+            case MessageType::CLIENT_DISCONNECT:
+                handleClientDisconnect(msg);
+                stateChanged = true;
+                break;
+            default:
+                throw std::runtime_error("Invalid MessageType");
             }
         }
 
@@ -65,11 +64,7 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    ProtocolMessage serverWelcomeMessage {
-        MessageType::SERVER_WELCOME,
-        msg.clientId,
-        ""
-    };
+    ProtocolMessage serverWelcomeMessage {MessageType::SERVER_WELCOME, msg.clientId, ""};
     network.sendToClient(msg.clientId, protocol::toString(serverWelcomeMessage));
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
     spdlog::info("Sent client welcome to " + msg.message);
@@ -91,23 +86,19 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
         if (player.direction != 'v') {
             player.nextDirection = '^';
         }
-    }
-    else if (msg.message == SnakeConstants::PLAYER_KEY_DOWN) {
+    } else if (msg.message == SnakeConstants::PLAYER_KEY_DOWN) {
         if (player.direction != '^') {
             player.nextDirection = 'v';
         }
-    }
-    else if (msg.message == SnakeConstants::PLAYER_KEY_LEFT) {
+    } else if (msg.message == SnakeConstants::PLAYER_KEY_LEFT) {
         if (player.direction != '>') {
             player.nextDirection = '<';
         }
-    }
-    else if (msg.message == SnakeConstants::PLAYER_KEY_RIGHT) {
+    } else if (msg.message == SnakeConstants::PLAYER_KEY_RIGHT) {
         if (player.direction != '<') {
             player.nextDirection = '>';
         }
-    }
-    else {
+    } else {
         spdlog::info("Unexpected receive from clientId(" + std::to_string(msg.clientId) + "): " + msg.message);
     }
 }
@@ -115,21 +106,10 @@ void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
 void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
     std::uniform_int_distribution<> distX(1 + 5, width - 1 - 5);
     std::uniform_int_distribution<> distY(1 + 5, height - 1 - 5);
-    clientIdToPlayerMap.emplace(
-        msg.clientId,
-        Player {
-            PlayerNode {distX(gen), distY(gen)},
-            '^',
-            '^',
-            msg.message,
-            1,
-            static_cast<Color>((msg.clientId % 5) + 2),
-            movementFrequencyMs,
-            timer.currentTick() + movementFrequencyMs,
-            false,
-            timer.currentTick()
-        }
-    );
+    clientIdToPlayerMap.emplace(msg.clientId,
+                                Player {PlayerNode {distX(gen), distY(gen)}, '^', '^', msg.message, 1,
+                                        static_cast<Color>((msg.clientId % 5) + 2), movementFrequencyMs,
+                                        timer.currentTick() + movementFrequencyMs, false, timer.currentTick()});
 }
 
 bool SnakeServer::updateSnakes() {
@@ -156,20 +136,20 @@ void SnakeServer::moveSnake(const int clientId) {
     Player & player {clientIdToPlayerMap.at(clientId)};
     player.direction = player.nextDirection;
     switch (player.direction) {
-        case '^':
-            player.head.move(0, -1);
-            break;
-        case 'v':
-            player.head.move(0, 1);
-            break;
-        case '<':
-            player.head.move(-1, 0);
-            break;
-        case '>':
-            player.head.move(1, 0);
-            break;
-        default:
-            throw std::runtime_error("Invalid direction: " + std::string(1, player.direction));
+    case '^':
+        player.head.move(0, -1);
+        break;
+    case 'v':
+        player.head.move(0, 1);
+        break;
+    case '<':
+        player.head.move(-1, 0);
+        break;
+    case '>':
+        player.head.move(1, 0);
+        break;
+    default:
+        throw std::runtime_error("Invalid direction: " + std::string(1, player.direction));
     }
     player.nextMoveTime = timer.currentTick() + player.movementFrequencyMs;
 }
@@ -192,16 +172,13 @@ void SnakeServer::checkCollisions() {
         if (player.head.y() <= 0) {
             spdlog::info("Destroying " + player.name + " due to upper boundary collision");
             clientIdsToDestroy.push_back(clientId);
-        }
-        else if (player.head.y() >= height + 1) {
+        } else if (player.head.y() >= height + 1) {
             spdlog::info("Destroying " + player.name + " due to lower boundary collision");
             clientIdsToDestroy.push_back(clientId);
-        }
-        else if (player.head.x() <= 0) {
+        } else if (player.head.x() <= 0) {
             spdlog::info("Destroying " + player.name + " due to left boundary collision");
             clientIdsToDestroy.push_back(clientId);
-        }
-        else if (player.head.x() >= width + 1) {
+        } else if (player.head.x() >= width + 1) {
             spdlog::info("Destroying " + player.name + " due to upper boundary collision");
             clientIdsToDestroy.push_back(clientId);
         }
@@ -215,13 +192,13 @@ void SnakeServer::checkCollisions() {
         // head-on-head snake collision - whoever arrived into the cell first survives
         else if (occupiedCellsHeads.at(playerHead).size() > 1) {
             int firstPlayerinCell {*std::min_element(
-                occupiedCellsHeads.at(playerHead).begin(),
-                occupiedCellsHeads.at(playerHead).end(),
+                occupiedCellsHeads.at(playerHead).begin(), occupiedCellsHeads.at(playerHead).end(),
                 // Checking who was first in the cell based on nextMoveTime is slightly imperfect.
                 // A client with a faster move speed can arrive later and still have a lower nextMoveTime.
                 // This is probably good enough though
-                [this] (const int a, const int b) {return clientIdToPlayerMap.at(a).nextMoveTime < clientIdToPlayerMap.at(b).nextMoveTime;}
-            )};
+                [this](const int a, const int b) {
+                    return clientIdToPlayerMap.at(a).nextMoveTime < clientIdToPlayerMap.at(b).nextMoveTime;
+                })};
             if (clientId != firstPlayerinCell) {
                 spdlog::info("Destroying " + player.name + " due to snake head collision");
                 clientIdsToDestroy.push_back(clientId);
@@ -230,15 +207,15 @@ void SnakeServer::checkCollisions() {
 
         // get food
         else if (foodMap.contains(playerHead)) {
-            spdlog::debug("Feeding player " + player.name + " at " + "(" + \
-                std::to_string(playerHead.first) + ", " + std::to_string(playerHead.second) + ")");
+            spdlog::debug("Feeding player " + player.name + " at " + "(" + std::to_string(playerHead.first) + ", " +
+                          std::to_string(playerHead.second) + ")");
             feedPlayer(playerHead, clientId);
         }
 
         // get speed boost
         else if (speedBoostMap.contains(playerHead)) {
-            spdlog::debug("Boosting player " + player.name + " at " + "(" + \
-                std::to_string(playerHead.first) + ", " + std::to_string(playerHead.second) + ")");
+            spdlog::debug("Boosting player " + player.name + " at " + "(" + std::to_string(playerHead.first) + ", " +
+                          std::to_string(playerHead.second) + ")");
             boostPlayer(playerHead, clientId);
         }
 
@@ -319,8 +296,7 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    network.broadcast(protocol::toString(ProtocolMessage {
-        MessageType::GAME_STATE, -1, buildGameStatePayload()}));
+    network.broadcast(protocol::toString(ProtocolMessage {MessageType::GAME_STATE, -1, buildGameStatePayload()}));
 }
 
 std::string SnakeServer::buildGameStatePayload() {

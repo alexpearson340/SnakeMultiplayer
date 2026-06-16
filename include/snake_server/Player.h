@@ -1,9 +1,9 @@
 #pragma once
 
+#include "common/Constants.h"
 #include <chrono>
 #include <memory>
 #include <vector>
-#include "common/Constants.h"
 
 class PlayerNode {
 public:
@@ -12,23 +12,18 @@ public:
     void moveTo(int xMove, int yMove);
     void grow();
     void getSegments(std::vector<std::pair<int, int>> &);
-    int x() {return xPos;};
-    int y() {return yPos;};
+    int x() { return xPos; };
+    int y() { return yPos; };
 
 private:
     int xPos;
     int yPos;
     int prevX;
     int prevY;
-    std::unique_ptr<PlayerNode> next { nullptr };
+    std::unique_ptr<PlayerNode> next {nullptr};
 };
 
-inline PlayerNode::PlayerNode(int x, int y)
-    : xPos {x}
-    , yPos {y} 
-    , prevX {x}
-    , prevY {y} {
-}
+inline PlayerNode::PlayerNode(int x, int y) : xPos {x}, yPos {y}, prevX {x}, prevY {y} {}
 
 inline void PlayerNode::move(int xMove, int yMove) {
     moveTo(xPos + xMove, yPos + yMove);
@@ -47,8 +42,7 @@ inline void PlayerNode::moveTo(int xMove, int yMove) {
 inline void PlayerNode::grow() {
     if (next == nullptr) {
         next = std::make_unique<PlayerNode>(prevX, prevY);
-    }
-    else {
+    } else {
         next->grow();
     }
 }

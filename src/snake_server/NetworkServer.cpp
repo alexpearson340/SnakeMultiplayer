@@ -1,21 +1,16 @@
+#include "snake_server/NetworkServer.h"
 #include "common/Constants.h"
 #include "common/Log.h"
-#include "snake_server/NetworkServer.h"
+#include <cstring>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <stdexcept>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 #include <unistd.h>
-#include <fcntl.h>
-#include <cstring>
-#include <stdexcept>
 
 NetworkServer::NetworkServer(int port)
-    : serverFd {-1}
-    , epollFd {-1}
-    , nextClientId {1}
-    , fdToClientIdMap {}
-    , clientIdToFdMap {}
-    , fdToBufferMap {} {
+    : serverFd {-1}, epollFd {-1}, nextClientId {1}, fdToClientIdMap {}, clientIdToFdMap {}, fdToBufferMap {} {
     startServer(port);
 }
 
@@ -37,7 +32,7 @@ void NetworkServer::startServer(int port) {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
-    if (bind(serverFd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+    if (bind(serverFd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         close(serverFd);
         throw std::runtime_error("Bind failed on port " + std::to_string(port));
     }
@@ -70,8 +65,7 @@ std::vector<ProtocolMessage> NetworkServer::pollMessages() {
     for (int i = 0; i < numEvents; i++) {
         if (events[i].data.fd == serverFd) {
             acceptNewClient();
-        }
-        else {
+        } else {
             for (ProtocolMessage pm : receiveFromClient(events[i].data.fd)) {
                 messages.push_back(pm);
             }
@@ -106,11 +100,10 @@ void NetworkServer::acceptNewClient() {
     socklen_t addrLen = sizeof(clientAddr);
 
     // Accept the connection - get a new fd for this client
-    int clientFd = accept(serverFd, (sockaddr*)&clientAddr, &addrLen);
+    int clientFd = accept(serverFd, (sockaddr *)&clientAddr, &addrLen);
     if (clientFd == -1) {
         spdlog::error("Accept failed");
-    }
-    else {
+    } else {
         setNonBlocking(clientFd);
         registerFdWithEpoll(clientFd);
 
@@ -141,14 +134,14 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
         fdToClientIdMap.erase(fd);
         clientIdToFdMap.erase(msg.clientId);
         fdToBufferMap.erase(fd);
-        
+
         return std::vector<ProtocolMessage> {msg};
     }
 
     return parseReceivedPacket(fd, buffer, bytesRead);
 }
 
-std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char* buffer, size_t size) {
+std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char * buffer, size_t size) {
     std::vector<ProtocolMessage> messages {};
     fdToBufferMap[fd] += std::string(buffer, size);
     size_t pos;

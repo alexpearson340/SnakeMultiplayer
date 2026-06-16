@@ -1,13 +1,13 @@
 #pragma once
 
-#include <chrono>
-#include <unordered_map>
-#include <random>
-#include <unordered_set>
 #include "common/Hash.h"
 #include "common/Timer.h"
 #include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
+#include <chrono>
+#include <random>
+#include <unordered_map>
+#include <unordered_set>
 
 class SnakeServer {
 public:
@@ -34,7 +34,7 @@ private:
     std::string buildGameStatePayload();
     void logGameState();
     void logOccupiedCells();
-    
+
     int width;
     int height;
     std::chrono::milliseconds movementFrequencyMs;
@@ -42,7 +42,7 @@ private:
     std::chrono::milliseconds boostDurationMs;
     Timer timer;
     std::mt19937 gen;
-    std::pair <std::string, int> serverHighScore;
+    std::pair<std::string, int> serverHighScore;
 
     NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;

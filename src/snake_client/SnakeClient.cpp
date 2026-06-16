@@ -1,22 +1,21 @@
-#include <locale.h>
-#include <ncurses.h>
-#include <cstdlib>
+#include "snake_client/SnakeClient.h"
 #include "common/Constants.h"
 #include "common/ProtocolMessage.h"
-#include "snake_client/SnakeClient.h"
+#include <cstdlib>
+#include <locale.h>
+#include <ncurses.h>
 
 SnakeClient::SnakeClient(int width, int height)
-    : width {width}
-    , height {height}
-    , running {true}
-    , playing {false}
-    , score {0}
-    , timer {}
-    , network(getServerIp(), getServerPort())
-    , clientId(-1)
-    , playerInput('\0')
-    , gameState{} {
-}
+    : width {width},
+      height {height},
+      running {true},
+      playing {false},
+      score {0},
+      timer {},
+      network(getServerIp(), getServerPort()),
+      clientId(-1),
+      playerInput('\0'),
+      gameState {} {}
 
 SnakeClient::~SnakeClient() {
     cleanupNcurses();
@@ -38,14 +37,11 @@ void SnakeClient::run() {
 }
 
 void SnakeClient::joinGame() {
-    const char* username = getenv("USER");
-    if (!username) username = "unknown";
+    const char * username = getenv("USER");
+    if (!username)
+        username = "unknown";
 
-    ProtocolMessage clientJoinMessage {
-        MessageType::CLIENT_JOIN,
-        clientId,
-        username
-    };
+    ProtocolMessage clientJoinMessage {MessageType::CLIENT_JOIN, clientId, username};
     network.sendToServer(protocol::toString(clientJoinMessage));
 }
 
@@ -54,50 +50,41 @@ void SnakeClient::handleInput() {
     if (ch != ERR) {
         if (ch == 'q' || ch == 'Q') {
             running = false;
-        }
-        else if (!playing && (ch == 'r' || ch == 'R')) {
+        } else if (!playing && (ch == 'r' || ch == 'R')) {
             joinGame();
-        }
-        else if (ch == KEY_UP) {
+        } else if (ch == KEY_UP) {
             playerInput = '^';
-        }
-        else if (ch == KEY_DOWN) {
+        } else if (ch == KEY_DOWN) {
             playerInput = 'v';
-        }
-        else if (ch == KEY_LEFT) {
+        } else if (ch == KEY_LEFT) {
             playerInput = '<';
-        }
-        else if (ch == KEY_RIGHT) {
+        } else if (ch == KEY_RIGHT) {
             playerInput = '>';
         }
     }
-    flushinp();  // Flush any remaining input
+    flushinp(); // Flush any remaining input
 }
 
 void SnakeClient::sendPlayerInput() {
-    ProtocolMessage playerInputMessage {
-        MessageType::CLIENT_INPUT,
-        clientId,
-        std::string(1, playerInput)
-    };
+    ProtocolMessage playerInputMessage {MessageType::CLIENT_INPUT, clientId, std::string(1, playerInput)};
     network.sendToServer(protocol::toString(playerInputMessage));
     playerInput = '\0';
 }
 
 void SnakeClient::receiveUpdates() {
-    std::vector<ProtocolMessage> messages { network.receiveFromServer() };
+    std::vector<ProtocolMessage> messages {network.receiveFromServer()};
     ProtocolMessage * latestGameState {nullptr};
 
     for (auto & msg : messages) {
         switch (msg.messageType) {
-            case MessageType::SERVER_WELCOME:
-                handleServerWelcome(msg);
-                break;
-            case MessageType::GAME_STATE:
-                latestGameState = &msg;
-                break;
-            default:
-                throw std::runtime_error("Invalid MessageType");
+        case MessageType::SERVER_WELCOME:
+            handleServerWelcome(msg);
+            break;
+        case MessageType::GAME_STATE:
+            latestGameState = &msg;
+            break;
+        default:
+            throw std::runtime_error("Invalid MessageType");
         }
     }
 
@@ -172,7 +159,8 @@ void SnakeClient::renderObjects() {
 void SnakeClient::renderScore() {
     mvprintw(height + 2, 0, "Press 'q' to quit");
     mvprintw(height + 3, 0, "Press 'r' to reload");
-    std::string serverHighScore {"Server high score is " + gameState.serverHighScore.first + ": " + std::to_string(gameState.serverHighScore.second)};
+    std::string serverHighScore {"Server high score is " + gameState.serverHighScore.first + ": " +
+                                 std::to_string(gameState.serverHighScore.second)};
     mvprintw(height + 4, 0, serverHighScore.c_str());
     std::vector<client::PlayerData> sortedPlayers {};
     for (auto & [clientId, p] : gameState.players) {
@@ -181,7 +169,7 @@ void SnakeClient::renderScore() {
 
     // Sort by score descending
     std::sort(sortedPlayers.begin(), sortedPlayers.end(),
-        [](const auto & l, const auto & r) {return l.score > r.score;});
+              [](const auto & l, const auto & r) { return l.score > r.score; });
 
     int row = height + 6;
     mvprintw(row++, 0, "+----------- SCOREBOARD -----------+");

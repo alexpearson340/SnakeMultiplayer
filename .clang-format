@@ -1,0 +1,13 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+AccessModifierOffset: -4
+NamespaceIndentation: All
+ColumnLimit: 120
+SpaceBeforeCpp11BracedList: true
+PointerAlignment: Middle
+BreakBeforeBraces: Attach
+
+AllowShortEnumsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AlwaysBreakTemplateDeclarations: Yes
+PackConstructorInitializers: NextLine

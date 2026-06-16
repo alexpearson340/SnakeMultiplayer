@@ -1,8 +1,8 @@
 #pragma once
 
+#include "snake_client/GameState.h"
 #include <deque>
 #include <vector>
-#include "snake_client/GameState.h"
 
 class Pathfinder {
 public:

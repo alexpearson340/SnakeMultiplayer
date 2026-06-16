@@ -27,7 +27,7 @@ namespace SnakeConstants {
     inline const std::string PLAYER_KEY_DOWN = "v";
     inline const std::string PLAYER_KEY_LEFT = "<";
     inline const std::string PLAYER_KEY_RIGHT = ">";
-}
+} // namespace SnakeConstants
 
 enum class Color {
     WHITE = 1,

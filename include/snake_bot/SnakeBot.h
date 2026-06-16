@@ -1,11 +1,11 @@
 #pragma once
 
-#include <random>
 #include "BotNetwork.h"
 #include "common/Timer.h"
+#include "snake_bot/Pathfinder.h"
 #include "snake_client/GameState.h"
 #include "snake_client/NetworkClient.h"
-#include "snake_bot/Pathfinder.h"
+#include <random>
 
 class SnakeBot {
 public:

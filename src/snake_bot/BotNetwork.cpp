@@ -1,16 +1,12 @@
+#include "snake_bot/BotNetwork.h"
+#include "common/Log.h"
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <sys/epoll.h>
-#include <stdexcept>
-#include "common/Log.h"
-#include "snake_bot/BotNetwork.h"
 
 BotNetwork::BotNetwork(const std::string & host, int port)
-    : host {host}
-    , port {port}
-    , epollFd {-1}
-    , clientIdToFdMap {}
-    , fdToNetworkClientMap {} {
+    : host {host}, port {port}, epollFd {-1}, clientIdToFdMap {}, fdToNetworkClientMap {} {
     startBotNetwork();
 }
 
@@ -52,7 +48,8 @@ std::vector<ProtocolMessage> BotNetwork::pollMessages() {
         for (ProtocolMessage pm : fdToNetworkClientMap.at(events[i].data.fd)->receiveFromServer()) {
             if (pm.messageType == MessageType::SERVER_WELCOME) {
                 if (clientIdToFdMap.contains(pm.clientId)) {
-                    throw std::runtime_error("How can clientId=" + std::to_string(pm.clientId) + " already be known on SERVER_WELCOME?");
+                    throw std::runtime_error("How can clientId=" + std::to_string(pm.clientId) +
+                                             " already be known on SERVER_WELCOME?");
                 }
                 clientIdToFdMap[pm.clientId] = events[i].data.fd;
             }

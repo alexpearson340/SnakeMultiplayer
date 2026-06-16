@@ -1,8 +1,8 @@
 #pragma once
 
-#include <string>
 #include "common/Constants.h"
 #include "common/ProtocolMessage.h"
+#include <string>
 
 inline const char * getServerIp() {
     const char * ip = getenv("SNAKE_SERVER_IP");
@@ -16,17 +16,17 @@ inline int getServerPort() {
 
 class NetworkClient {
 public:
-    NetworkClient(const std::string& host, int port);
+    NetworkClient(const std::string & host, int port);
     ~NetworkClient();
 
-    int getServerFd() const {return serverFd;};
+    int getServerFd() const { return serverFd; };
     void sendToServer(std::string_view msg);
     std::vector<ProtocolMessage> receiveFromServer();
 
 private:
-    void connectToServer(const std::string& host, int port);
+    void connectToServer(const std::string & host, int port);
     void setNonBlocking(int fd);
-    std::vector<ProtocolMessage> parseReceivedPacket(char* buffer, size_t size);
+    std::vector<ProtocolMessage> parseReceivedPacket(char * buffer, size_t size);
 
     int serverFd;
     bool connected;

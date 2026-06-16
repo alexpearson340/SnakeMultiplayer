@@ -1,11 +1,7 @@
 #include "snake_bot/Pathfinder.h"
 #include <climits>
 
-Pathfinder::Pathfinder(const int width, const int height)
-    : width {width}
-    , height {height}
-    , dijkstraMap {} {
-}
+Pathfinder::Pathfinder(const int width, const int height) : width {width}, height {height}, dijkstraMap {} {}
 
 const char Pathfinder::calculateNextMove(const int clientId, const client::GameState & gameState) const {
     const char & direction {gameState.players.at(clientId).direction};
@@ -71,7 +67,7 @@ void Pathfinder::populateFoodAndPlayers(const client::GameState & gameState) {
 void Pathfinder::computePaths(const client::GameState & gameState) {
     std::deque<std::pair<int, int>> toVisit {};
     for (auto & f : gameState.food) {
-        if (dijkstraMap.at(f.y).at(f.x) == 0) {     // dont seed on food hidden underneath a body part
+        if (dijkstraMap.at(f.y).at(f.x) == 0) { // dont seed on food hidden underneath a body part
             toVisit.push_back({f.x, f.y});
         }
     }
@@ -90,14 +86,15 @@ void Pathfinder::computePaths(const client::GameState & gameState) {
         toVisit.pop_front();
         nextVal = dijkstraMap.at(currentCell.second).at(currentCell.first) + 1;
 
-        checkNeighbour(nextVal, currentCell.first, currentCell.second - 1, toVisit);    // upwards cell
-        checkNeighbour(nextVal, currentCell.first, currentCell.second + 1, toVisit);    // downwards cell
-        checkNeighbour(nextVal, currentCell.first - 1, currentCell.second, toVisit);    // left cell
-        checkNeighbour(nextVal, currentCell.first + 1, currentCell.second, toVisit);    // right cell
+        checkNeighbour(nextVal, currentCell.first, currentCell.second - 1, toVisit); // upwards cell
+        checkNeighbour(nextVal, currentCell.first, currentCell.second + 1, toVisit); // downwards cell
+        checkNeighbour(nextVal, currentCell.first - 1, currentCell.second, toVisit); // left cell
+        checkNeighbour(nextVal, currentCell.first + 1, currentCell.second, toVisit); // right cell
     }
 }
 
-void Pathfinder::checkNeighbour(const int nextVal, const int neighbourX, const int neighbourY, std::deque<std::pair<int, int>> & toVisit) {
+void Pathfinder::checkNeighbour(const int nextVal, const int neighbourX, const int neighbourY,
+                                std::deque<std::pair<int, int>> & toVisit) {
     // neighbour is out of bounds
     if ((neighbourX <= 0) || (neighbourX > width) || (neighbourY <= 0) || (neighbourY > height)) {
         return;

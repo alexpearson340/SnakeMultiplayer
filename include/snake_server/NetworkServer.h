@@ -1,9 +1,9 @@
 #pragma once
 
+#include "common/ProtocolMessage.h"
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include "common/ProtocolMessage.h"
 
 class NetworkServer {
 public:
@@ -18,7 +18,7 @@ private:
     void registerFdWithEpoll(int fd);
     void acceptNewClient();
     std::vector<ProtocolMessage> receiveFromClient(int fd);
-    std::vector<ProtocolMessage> parseReceivedPacket(int fd, char* buffer, size_t size);
+    std::vector<ProtocolMessage> parseReceivedPacket(int fd, char * buffer, size_t size);
 
     int serverFd;
     int epollFd;

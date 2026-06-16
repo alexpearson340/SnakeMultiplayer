@@ -1,9 +1,9 @@
 #pragma once
 
+#include "snake_client/NetworkClient.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include "snake_client/NetworkClient.h"
 
 class BotNetwork {
 public:
