@@ -10,7 +10,7 @@ Eat `@` to grow your snake and increase your score. Eat `*` for a speed boost. A
 
 - **`snake_server`** - game server. Owns the arena, advances the simulation, broadcasts game state.
 - **`snake_client`** - `ncurses` TUI. Captures keystrokes, renders the latest server snapshot.
-- **`snake_bot`** - headless client that runs snake bots which path to food via Dijkstra's algorithm.
+- **`snake_bot`** - headless client that runs snake bots which move towards food and avoid other players using Dijkstra's algorithm.
 
 <img src="pictures/snake-multiplayer.png" width="450" height="auto" />
 
