@@ -2,7 +2,7 @@
 #include <climits>
 #include <cstddef>
 
-Pathfinder::Pathfinder(const int width, const int height) : width {width}, height {height}, dijkstraMap {} {}
+Pathfinder::Pathfinder(const int width_, const int height_) : width {width_}, height {height_}, dijkstraMap {} {}
 
 int & Pathfinder::cell(int x, int y) {
     return dijkstraMap.at(static_cast<std::size_t>(y)).at(static_cast<std::size_t>(x));

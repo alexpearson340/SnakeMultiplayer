@@ -5,8 +5,8 @@
 #include <string>
 #include <sys/epoll.h>
 
-BotNetwork::BotNetwork(const std::string & host, int port)
-    : host {host}, port {port}, epollFd {-1}, clientIdToFdMap {}, fdToNetworkClientMap {} {
+BotNetwork::BotNetwork(const std::string & host_, int port_)
+    : host {host_}, port {port_}, epollFd {-1}, clientIdToFdMap {}, fdToNetworkClientMap {} {
     startBotNetwork();
 }
 

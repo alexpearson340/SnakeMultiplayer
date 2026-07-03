@@ -6,7 +6,7 @@
 
 class Pathfinder {
 public:
-    Pathfinder(const int width, const int height);
+    Pathfinder(const int width_, const int height_);
     char calculateNextMove(const int, const client::GameState &) const;
     void rebuildMap(const client::GameState &);
 

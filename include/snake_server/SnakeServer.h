@@ -11,7 +11,7 @@
 
 class SnakeServer {
 public:
-    SnakeServer(int width, int height);
+    SnakeServer(int width_, int height_);
     void run();
 
 private:

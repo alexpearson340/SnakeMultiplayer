@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.25)
 project(SnakeMultiplayer)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -15,6 +15,7 @@ FetchContent_Declare(
     json
     URL https://github.com/nlohmann/json/releases/download/v3.11.3/json.tar.xz
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    SYSTEM
 )
 FetchContent_MakeAvailable(json)
 
@@ -22,6 +23,7 @@ FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
     GIT_TAG v1.15.3
+    SYSTEM
 )
 FetchContent_MakeAvailable(spdlog)
 
@@ -32,6 +34,7 @@ if(APPLE)
         epoll-shim
         GIT_REPOSITORY https://github.com/jiixyj/epoll-shim.git
         GIT_TAG v0.0.20240608
+        SYSTEM
     )
     set(BUILD_SHARED_LIBS OFF)
     FetchContent_MakeAvailable(epoll-shim)

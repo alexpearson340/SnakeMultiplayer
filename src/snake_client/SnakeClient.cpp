@@ -5,9 +5,9 @@
 #include <locale.h>
 #include <ncurses.h>
 
-SnakeClient::SnakeClient(int width, int height)
-    : width {width},
-      height {height},
+SnakeClient::SnakeClient(int width_, int height_)
+    : width {width_},
+      height {height_},
       running {true},
       playing {false},
       timer {},
@@ -160,7 +160,7 @@ void SnakeClient::renderScore() {
     mvprintw(height + 3, 0, "Press 'r' to reload");
     std::string serverHighScore {"Server high score is " + gameState.serverHighScore.first + ": " +
                                  std::to_string(gameState.serverHighScore.second)};
-    mvprintw(height + 4, 0, serverHighScore.c_str());
+    mvprintw(height + 4, 0, "%s", serverHighScore.c_str());
     std::vector<client::PlayerData> sortedPlayers {};
     for (auto & [id, p] : gameState.players) {
         sortedPlayers.push_back(p);

@@ -6,7 +6,7 @@
 
 class SnakeClient {
 public:
-    SnakeClient(int width, int height);
+    SnakeClient(int width_, int height_);
     ~SnakeClient();
     void run();
 

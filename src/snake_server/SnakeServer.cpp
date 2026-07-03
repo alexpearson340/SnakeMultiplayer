@@ -6,9 +6,9 @@
 #include <stdexcept>
 #include <string>
 
-SnakeServer::SnakeServer(int width, int height)
-    : width {width},
-      height {height},
+SnakeServer::SnakeServer(int width_, int height_)
+    : width {width_},
+      height {height_},
       movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS)),
       boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS)),
       boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS)),
@@ -167,6 +167,7 @@ void SnakeServer::checkCollisions() {
     std::vector<int> clientIdsToDestroy;
     for (auto & [clientId, player] : clientIdToPlayerMap) {
         std::pair<int, int> playerHead {player.head.x(), player.head.y()};
+        const auto & playerHeadCells {occupiedCellsHeads.at(playerHead)};
 
         // collision with arena boundary
         if (player.head.y() <= 0) {
@@ -190,9 +191,9 @@ void SnakeServer::checkCollisions() {
         }
 
         // head-on-head snake collision - whoever arrived into the cell first survives
-        else if (occupiedCellsHeads.at(playerHead).size() > 1) {
+        else if (playerHeadCells.size() > 1) {
             int firstPlayerinCell {*std::min_element(
-                occupiedCellsHeads.at(playerHead).begin(), occupiedCellsHeads.at(playerHead).end(),
+                playerHeadCells.begin(), playerHeadCells.end(),
                 // Checking who was first in the cell based on nextMoveTime is slightly imperfect.
                 // A client with a faster move speed can arrive later and still have a lower nextMoveTime.
                 // This is probably good enough though
