@@ -19,9 +19,22 @@ FetchContent_MakeAvailable(json)
 FetchContent_Declare(
     spdlog
     GIT_REPOSITORY https://github.com/gabime/spdlog.git
-    GIT_TAG v1.14.1
+    GIT_TAG v1.15.3
 )
 FetchContent_MakeAvailable(spdlog)
+
+# On macOS/BSD there is no native epoll; epoll-shim provides the epoll API
+# (sys/epoll.h) implemented on top of kqueue.Linux uses the kernel's epoll directly.
+if(APPLE)
+    FetchContent_Declare(
+        epoll-shim
+        GIT_REPOSITORY https://github.com/jiixyj/epoll-shim.git
+        GIT_TAG v0.0.20240608
+    )
+    set(BUILD_SHARED_LIBS OFF)
+    FetchContent_MakeAvailable(epoll-shim)
+    set(EPOLL_SHIM_LIB epoll-shim)
+endif()
 
 # CLIENT LIB
 add_library(
@@ -59,6 +72,7 @@ target_link_libraries(
     snake_server_lib
     spdlog::spdlog
     nlohmann_json::nlohmann_json
+    ${EPOLL_SHIM_LIB}
 )
 
 # BOT LIB
@@ -78,6 +92,7 @@ target_link_libraries(
     snake_bot_lib
     snake_client_lib
     nlohmann_json::nlohmann_json
+    ${EPOLL_SHIM_LIB}
 )
 
 # CLIENT EXECUTABLE
