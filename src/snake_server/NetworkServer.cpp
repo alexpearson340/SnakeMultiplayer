@@ -32,7 +32,7 @@ void NetworkServer::startServer(int port) {
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
 
-    if (bind(serverFd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    if (bind(serverFd, reinterpret_cast<struct sockaddr *>(&address), sizeof(address)) < 0) {
         close(serverFd);
         throw std::runtime_error("Bind failed on port " + std::to_string(port));
     }
@@ -100,7 +100,7 @@ void NetworkServer::acceptNewClient() {
     socklen_t addrLen = sizeof(clientAddr);
 
     // Accept the connection - get a new fd for this client
-    int clientFd = accept(serverFd, (sockaddr *)&clientAddr, &addrLen);
+    int clientFd = accept(serverFd, reinterpret_cast<sockaddr *>(&clientAddr), &addrLen);
     if (clientFd == -1) {
         spdlog::error("Accept failed");
     } else {
@@ -118,7 +118,7 @@ void NetworkServer::acceptNewClient() {
 
 std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
     char buffer[1024];
-    int bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
+    ssize_t bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
     if (bytesRead <= 0) {
         // Connection closed or error
@@ -138,7 +138,7 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
         return std::vector<ProtocolMessage> {msg};
     }
 
-    return parseReceivedPacket(fd, buffer, bytesRead);
+    return parseReceivedPacket(fd, buffer, static_cast<size_t>(bytesRead));
 }
 
 std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char * buffer, size_t size) {

@@ -10,7 +10,6 @@ SnakeClient::SnakeClient(int width, int height)
       height {height},
       running {true},
       playing {false},
-      score {0},
       timer {},
       network(getServerIp(), getServerPort()),
       clientId(-1),
@@ -139,7 +138,7 @@ void SnakeClient::renderArena() {
 }
 
 void SnakeClient::renderPlayers() {
-    for (auto & [clientId, p] : gameState.players) {
+    for (auto & [id, p] : gameState.players) {
         renderCharToScreen(p.segments[0].first, p.segments[0].second, p.direction);
         for (auto it = p.segments.begin() + 1; it < p.segments.end(); it++) {
             renderCharToScreen(it->first, it->second, 'c', p.color);
@@ -163,7 +162,7 @@ void SnakeClient::renderScore() {
                                  std::to_string(gameState.serverHighScore.second)};
     mvprintw(height + 4, 0, serverHighScore.c_str());
     std::vector<client::PlayerData> sortedPlayers {};
-    for (auto & [clientId, p] : gameState.players) {
+    for (auto & [id, p] : gameState.players) {
         sortedPlayers.push_back(p);
     }
 
@@ -185,7 +184,8 @@ void SnakeClient::renderScore() {
 }
 
 void SnakeClient::renderCharToScreen(const int x, const int y, const char & character, const int color) {
-    mvaddch(y, x * CLIENT_HORIZONTAL_SCALING, character | COLOR_PAIR(color));
+    mvaddch(y, x * CLIENT_HORIZONTAL_SCALING,
+            static_cast<chtype>(static_cast<unsigned char>(character)) | COLOR_PAIR(color));
 }
 
 void SnakeClient::initNcurses() {

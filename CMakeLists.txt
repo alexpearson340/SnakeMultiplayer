@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COMPILE_COMMANDS_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+include(cmake/CompilerWarnings.cmake)
+
 find_package(Curses REQUIRED)
 
 include(FetchContent)
@@ -54,6 +56,7 @@ target_link_libraries(
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     ${CURSES_LIBRARIES}
+    project_warnings
 )
 
 # SERVER LIB
@@ -73,6 +76,7 @@ target_link_libraries(
     spdlog::spdlog
     nlohmann_json::nlohmann_json
     ${EPOLL_SHIM_LIB}
+    project_warnings
 )
 
 # BOT LIB
@@ -93,6 +97,7 @@ target_link_libraries(
     snake_client_lib
     nlohmann_json::nlohmann_json
     ${EPOLL_SHIM_LIB}
+    project_warnings
 )
 
 # CLIENT EXECUTABLE

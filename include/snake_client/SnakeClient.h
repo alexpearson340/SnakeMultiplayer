@@ -30,7 +30,6 @@ private:
     int height;
     bool running;
     bool playing;
-    int score;
 
     Timer timer;
     NetworkClient network;

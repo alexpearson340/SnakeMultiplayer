@@ -1,37 +1,46 @@
 #include "snake_bot/Pathfinder.h"
 #include <climits>
+#include <cstddef>
 
 Pathfinder::Pathfinder(const int width, const int height) : width {width}, height {height}, dijkstraMap {} {}
 
-const char Pathfinder::calculateNextMove(const int clientId, const client::GameState & gameState) const {
+int & Pathfinder::cell(int x, int y) {
+    return dijkstraMap.at(static_cast<std::size_t>(y)).at(static_cast<std::size_t>(x));
+}
+
+const int & Pathfinder::cell(int x, int y) const {
+    return dijkstraMap.at(static_cast<std::size_t>(y)).at(static_cast<std::size_t>(x));
+}
+
+char Pathfinder::calculateNextMove(const int clientId, const client::GameState & gameState) const {
     const char & direction {gameState.players.at(clientId).direction};
     const int & x {gameState.players.at(clientId).segments[0].first};
     const int & y {gameState.players.at(clientId).segments[0].second};
 
     std::pair<long, char> lowest {LONG_MAX, '?'};
     if (direction != 'v' && y > 1) {
-        const int & neighbourVal {dijkstraMap.at(y - 1).at(x)};
+        const int & neighbourVal {cell(x, y - 1)};
         if (neighbourVal >= 0 && neighbourVal < lowest.first) {
             lowest.first = neighbourVal;
             lowest.second = '^';
         }
     }
     if (direction != '^' && y < height) {
-        const int & neighbourVal {dijkstraMap.at(y + 1).at(x)};
+        const int & neighbourVal {cell(x, y + 1)};
         if (neighbourVal >= 0 && neighbourVal < lowest.first) {
             lowest.first = neighbourVal;
             lowest.second = 'v';
         }
     }
     if (direction != '>' && x > 1) {
-        const int & neighbourVal {dijkstraMap.at(y).at(x - 1)};
+        const int & neighbourVal {cell(x - 1, y)};
         if (neighbourVal >= 0 && neighbourVal < lowest.first) {
             lowest.first = neighbourVal;
             lowest.second = '<';
         }
     }
     if (direction != '<' && x < width) {
-        const int & neighbourVal {dijkstraMap.at(y).at(x + 1)};
+        const int & neighbourVal {cell(x + 1, y)};
         if (neighbourVal >= 0 && neighbourVal < lowest.first) {
             lowest.first = neighbourVal;
             lowest.second = '>';
@@ -42,7 +51,8 @@ const char Pathfinder::calculateNextMove(const int clientId, const client::GameS
 
 void Pathfinder::rebuildMap(const client::GameState & gameState) {
     // clear the map out
-    dijkstraMap.assign(height + 1, std::vector<int>(width + 1, INT_MAX));
+    dijkstraMap.assign(static_cast<std::size_t>(height + 1),
+                       std::vector<int>(static_cast<std::size_t>(width + 1), INT_MAX));
     populateFoodAndPlayers(gameState);
     computePaths(gameState);
 }
@@ -50,16 +60,16 @@ void Pathfinder::rebuildMap(const client::GameState & gameState) {
 void Pathfinder::populateFoodAndPlayers(const client::GameState & gameState) {
     // populate food and boosts as 0 - the goal for pathfinding
     for (auto & f : gameState.food) {
-        dijkstraMap.at(f.y).at(f.x) = 0;
+        cell(f.x, f.y) = 0;
     }
     for (auto & b : gameState.speedBoosts) {
-        dijkstraMap.at(b.y).at(b.x) = 0;
+        cell(b.x, b.y) = 0;
     }
 
     // populate player head and body segments as negative - considered impassable
     for (auto & [clientId, player] : gameState.players) {
         for (auto & s : player.segments) {
-            dijkstraMap.at(s.second).at(s.first) = -1;
+            cell(s.first, s.second) = -1;
         }
     }
 }
@@ -67,12 +77,12 @@ void Pathfinder::populateFoodAndPlayers(const client::GameState & gameState) {
 void Pathfinder::computePaths(const client::GameState & gameState) {
     std::deque<std::pair<int, int>> toVisit {};
     for (auto & f : gameState.food) {
-        if (dijkstraMap.at(f.y).at(f.x) == 0) { // dont seed on food hidden underneath a body part
+        if (cell(f.x, f.y) == 0) { // dont seed on food hidden underneath a body part
             toVisit.push_back({f.x, f.y});
         }
     }
     for (auto & b : gameState.speedBoosts) {
-        if (dijkstraMap.at(b.y).at(b.x) == 0) {
+        if (cell(b.x, b.y) == 0) {
             toVisit.push_back({b.x, b.y});
         }
     }
@@ -84,7 +94,7 @@ void Pathfinder::computePaths(const client::GameState & gameState) {
     while (!toVisit.empty()) {
         currentCell = std::move(toVisit.front());
         toVisit.pop_front();
-        nextVal = dijkstraMap.at(currentCell.second).at(currentCell.first) + 1;
+        nextVal = cell(currentCell.first, currentCell.second) + 1;
 
         checkNeighbour(nextVal, currentCell.first, currentCell.second - 1, toVisit); // upwards cell
         checkNeighbour(nextVal, currentCell.first, currentCell.second + 1, toVisit); // downwards cell
@@ -101,10 +111,10 @@ void Pathfinder::checkNeighbour(const int nextVal, const int neighbourX, const i
     }
 
     // neighbour has already been visited or is impassable
-    if (dijkstraMap.at(neighbourY).at(neighbourX) != INT_MAX) {
+    if (cell(neighbourX, neighbourY) != INT_MAX) {
         return;
     }
 
-    dijkstraMap.at(neighbourY).at(neighbourX) = nextVal;
+    cell(neighbourX, neighbourY) = nextVal;
     toVisit.push_back({neighbourX, neighbourY});
 }

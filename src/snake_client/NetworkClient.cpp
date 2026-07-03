@@ -38,7 +38,7 @@ void NetworkClient::connectToServer(const std::string & host, int port) {
         throw std::runtime_error("Invalid address: " + host);
     }
 
-    if (connect(serverFd, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+    if (connect(serverFd, reinterpret_cast<struct sockaddr *>(&serverAddr), sizeof(serverAddr)) < 0) {
         close(serverFd);
         throw std::runtime_error("Connection failed to " + host + ":" + std::to_string(port));
     }
@@ -89,7 +89,7 @@ std::vector<ProtocolMessage> NetworkClient::receiveFromServer() {
         throw std::runtime_error("Server disconnected");
     }
 
-    return parseReceivedPacket(buffer, bytesRead);
+    return parseReceivedPacket(buffer, static_cast<size_t>(bytesRead));
 }
 
 std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char * buffer, size_t size) {

@@ -20,11 +20,9 @@ private:
     void handleGameStateMessage(const ProtocolMessage & msg);
     void buildArenaMap();
     void sendInput();
-    const char calculateRandomMove(const int);
-    const char calculatePathingMove(const int) const;
+    char calculateRandomMove();
+    char calculatePathingMove() const;
 
-    int width;
-    int height;
     bool awaitingJoin;
     int clientId;
     Timer timer;
