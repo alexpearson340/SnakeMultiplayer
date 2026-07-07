@@ -2,11 +2,12 @@
 #include "common/Constants.h"
 #include "common/Json.h"
 #include "common/Log.h"
+#include "common/MessageLogWriter.h"
 #include <chrono>
 #include <stdexcept>
 #include <string>
 
-SnakeServer::SnakeServer(int width_, int height_)
+SnakeServer::SnakeServer(const int width_, const int height_, const std::string & applicationName_)
     : width {width_},
       height {height_},
       movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS)),
@@ -14,6 +15,7 @@ SnakeServer::SnakeServer(int width_, int height_)
       boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS)),
       timer {},
       gen {std::random_device {}()},
+      msgLogWriter {applicationName_},
       serverHighScore {},
       network {SERVER_PORT},
       clientIdToPlayerMap {},
@@ -30,6 +32,7 @@ void SnakeServer::run() {
         bool stateChanged = false;
 
         for (auto msg : messages) {
+            msgLogWriter.log(msg);
             switch (msg.messageType) {
             case MessageType::CLIENT_JOIN:
                 handleClientJoin(msg);
@@ -64,8 +67,9 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    ProtocolMessage serverWelcomeMessage {MessageType::SERVER_WELCOME, msg.clientId, ""};
-    network.sendToClient(msg.clientId, protocol::toString(serverWelcomeMessage));
+    ProtocolMessage pm {MessageType::SERVER_WELCOME, msg.clientId, ""};
+    msgLogWriter.log(pm);
+    network.sendToClient(msg.clientId, pm);
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
     spdlog::info("Sent client welcome to " + msg.message);
 }
@@ -297,7 +301,9 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    network.broadcast(protocol::toString(ProtocolMessage {MessageType::GAME_STATE, -1, buildGameStatePayload()}));
+    ProtocolMessage pm {MessageType::GAME_STATE, -1, buildGameStatePayload()};
+    msgLogWriter.log(pm);
+    network.broadcast(pm);
 }
 
 std::string SnakeServer::buildGameStatePayload() {

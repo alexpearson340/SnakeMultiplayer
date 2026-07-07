@@ -154,13 +154,15 @@ std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char * b
     return messages;
 }
 
-void NetworkServer::sendToClient(int clientId, std::string_view msg) {
+void NetworkServer::sendToClient(int clientId, ProtocolMessage msg) {
+    std::string msgString {protocol::toString(msg)};
     int fd {clientIdToFdMap.at(clientId)};
-    send(fd, msg.data(), msg.size(), 0);
+    send(fd, msgString.data(), msgString.size(), 0);
 }
 
-void NetworkServer::broadcast(std::string_view msg) {
+void NetworkServer::broadcast(ProtocolMessage msg) {
+    std::string msgString {protocol::toString(msg)};
     for (const auto & [fd, clientId] : fdToClientIdMap) {
-        send(fd, msg.data(), msg.size(), 0);
+        send(fd, msgString.data(), msgString.size(), 0);
     }
 }

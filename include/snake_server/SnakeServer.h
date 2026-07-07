@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/Hash.h"
+#include "common/MessageLogWriter.h"
 #include "common/Timer.h"
 #include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
@@ -11,7 +12,7 @@
 
 class SnakeServer {
 public:
-    SnakeServer(int width_, int height_);
+    SnakeServer(const int, const int, const std::string &);
     void run();
 
 private:
@@ -42,6 +43,7 @@ private:
     std::chrono::milliseconds boostDurationMs;
     Timer timer;
     std::mt19937 gen;
+    MessageLogWriter msgLogWriter;
     std::pair<std::string, int> serverHighScore;
 
     NetworkServer network;

@@ -9,8 +9,8 @@ class NetworkServer {
 public:
     NetworkServer(int);
     std::vector<ProtocolMessage> pollMessages();
-    void sendToClient(int, std::string_view);
-    void broadcast(std::string_view);
+    void sendToClient(int, ProtocolMessage);
+    void broadcast(ProtocolMessage);
 
 private:
     void startServer(int);

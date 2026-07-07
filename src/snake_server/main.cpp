@@ -3,8 +3,9 @@
 #include "snake_server/SnakeServer.h"
 
 int main() {
-    initLogging("snake_server", false, true);
-    SnakeServer server {ARENA_WIDTH, ARENA_HEIGHT};
+    const std::string applicationName {"snake_server"};
+    initLogging(applicationName, false, true);
+    SnakeServer server {ARENA_WIDTH, ARENA_HEIGHT, applicationName};
     server.run();
     return 0;
 }
