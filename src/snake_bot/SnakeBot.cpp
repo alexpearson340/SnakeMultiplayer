@@ -3,6 +3,7 @@
 
 SnakeBot::SnakeBot(const int width, const int height)
     : awaitingJoin {false},
+      gameStateHasChanged {true},
       clientId {-1},
       gen {std::random_device {}()},
       network(getServerIp(), getServerPort()),
@@ -17,7 +18,10 @@ void SnakeBot::run() {
         }
         receiveUpdates();
         if (clientId != -1) {
-            sendInput();
+            if (gameStateHasChanged) {
+                sendInput();
+            };
+            gameStateHasChanged = false;
         }
     }
 }
@@ -48,6 +52,7 @@ void SnakeBot::receiveUpdates() {
             break;
         case MessageType::GAME_STATE:
             latestGameState = &msg;
+            gameStateHasChanged = true;
             break;
         default:
             throw std::runtime_error("Invalid MessageType");

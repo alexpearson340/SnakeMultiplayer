@@ -24,6 +24,7 @@ private:
     char calculatePathingMove() const;
 
     bool awaitingJoin;
+    bool gameStateHasChanged;
     int clientId;
     Timer timer;
     std::mt19937 gen;
