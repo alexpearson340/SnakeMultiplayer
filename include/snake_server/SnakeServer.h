@@ -16,6 +16,8 @@ public:
     void run();
 
 private:
+    void recordSessionConfig();
+    void stampMessage(ProtocolMessage &);
     void handleClientJoin(const ProtocolMessage &);
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
@@ -33,7 +35,6 @@ private:
     void placeSpeedBoost();
     void broadcastGameState();
     std::string buildGameStatePayload();
-    void stampMessage(ProtocolMessage &);
 
     int width;
     int height;
@@ -42,6 +43,7 @@ private:
     std::chrono::milliseconds boostedMovementFrequencyMs;
     std::chrono::milliseconds boostDurationMs;
     Timer timer;
+    std::uint32_t seed;
     std::mt19937 gen;
     MessageLogWriter msgLogWriter;
     std::pair<std::string, int> serverHighScore;

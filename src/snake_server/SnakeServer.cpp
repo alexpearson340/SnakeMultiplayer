@@ -15,7 +15,8 @@ SnakeServer::SnakeServer(const int width_, const int height_, const std::string 
       boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS)),
       boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS)),
       timer {},
-      gen {std::random_device {}()},
+      seed {std::random_device {}()},
+      gen {seed},
       msgLogWriter {applicationName_},
       serverHighScore {},
       network {SERVER_PORT},
@@ -26,6 +27,7 @@ SnakeServer::SnakeServer(const int width_, const int height_, const std::string 
       speedBoostMap {} {}
 
 void SnakeServer::run() {
+    recordSessionConfig();
     while (true) {
         replaceFood();
         std::vector<ProtocolMessage> messages {network.pollMessages()};
@@ -62,6 +64,21 @@ void SnakeServer::run() {
             broadcastGameState();
         }
     }
+}
+
+void SnakeServer::recordSessionConfig() {
+    json sessionConfig;
+    sessionConfig["width"] = width;
+    sessionConfig["height"] = height;
+    sessionConfig["seed"] = seed;
+    ProtocolMessage pm {MessageType::SESSION_CONFIG, sessionConfig.dump()};
+    stampMessage(pm);
+    msgLogWriter.log(pm);
+}
+
+void SnakeServer::stampMessage(ProtocolMessage & msg) {
+    msg.sequence = currentSequence++;
+    msg.transactTime = timer.currentTickAsNanos();
 }
 
 void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
@@ -355,9 +372,4 @@ std::string SnakeServer::buildGameStatePayload() {
     }
 
     return gameState.dump();
-}
-
-void SnakeServer::stampMessage(ProtocolMessage & msg) {
-    msg.sequence = currentSequence++;
-    msg.transactTime = timer.currentTickAsNanos();
 }

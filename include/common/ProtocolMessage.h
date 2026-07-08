@@ -4,6 +4,7 @@
 #include <string>
 
 enum class MessageType {
+    SESSION_CONFIG,    // contains parameters such as the random seed used
     CLIENT_CONNECT,    // first contact between client and server
     CLIENT_DISCONNECT, // end of contact between client and server
     CLIENT_JOIN,       // client to server, introduces the client
@@ -33,10 +34,8 @@ namespace protocol {
 
     inline ProtocolMessage fromString(const std::string_view str) {
         json j = json::parse(str);
-        return {
-            static_cast<MessageType>(j["message_type"]), j["message"], j["client_id"],
-                static_cast<int64_t>(j["sequence"]), static_cast<int64_t>(j["transact_time"])
-        };
+        return {static_cast<MessageType>(j["message_type"]), j["message"], j["client_id"],
+                static_cast<int64_t>(j["sequence"]), static_cast<int64_t>(j["transact_time"])};
     }
 
     inline ProtocolMessage fromString(const std::string_view str, int clientId) {
