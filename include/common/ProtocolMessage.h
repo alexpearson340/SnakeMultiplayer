@@ -4,13 +4,13 @@
 #include <string>
 
 enum class MessageType {
-    SESSION_CONFIG,    // contains parameters such as the random seed used
-    CLIENT_CONNECT,    // first contact between client and server
-    CLIENT_DISCONNECT, // end of contact between client and server
-    CLIENT_JOIN,       // client to server, introduces the client
-    SERVER_WELCOME,    // server acknowledgement of client join
-    CLIENT_INPUT,      // client input of actions to server
-    GAME_STATE         // server broadcast of game state out to clients
+    SERVER_CONFIG = 0,     // contains parameters such as the random seed used
+    CLIENT_CONNECT = 1,    // first contact between client and server
+    CLIENT_DISCONNECT = 2, // end of contact between client and server
+    CLIENT_JOIN = 3,       // client to server, introduces the client
+    SERVER_WELCOME = 4,    // server acknowledgement of client join
+    CLIENT_INPUT = 5,      // client input of actions to server
+    GAME_STATE = 6         // server broadcast of game state out to clients
 };
 
 struct ProtocolMessage {

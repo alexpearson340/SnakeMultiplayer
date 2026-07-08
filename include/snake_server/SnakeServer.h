@@ -5,6 +5,7 @@
 #include "common/Timer.h"
 #include "snake_server/NetworkServer.h"
 #include "snake_server/Player.h"
+#include "snake_server/ServerConfig.h"
 #include <chrono>
 #include <random>
 #include <unordered_map>
@@ -12,11 +13,11 @@
 
 class SnakeServer {
 public:
-    SnakeServer(const int, const int, const std::string &);
+    SnakeServer(const ServerConfig &);
     void run();
 
 private:
-    void recordSessionConfig();
+    void recordServerConfig();
     void stampMessage(ProtocolMessage &);
     void handleClientJoin(const ProtocolMessage &);
     void handleClientDisconnect(const ProtocolMessage &);

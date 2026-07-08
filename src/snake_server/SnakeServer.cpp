@@ -7,19 +7,19 @@
 #include <stdexcept>
 #include <string>
 
-SnakeServer::SnakeServer(const int width_, const int height_, const std::string & applicationName_)
-    : width {width_},
-      height {height_},
+SnakeServer::SnakeServer(const ServerConfig & config)
+    : width {config.width},
+      height {config.height},
       currentSequence {0},
-      movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS)),
-      boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS)),
-      boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS)),
+      movementFrequencyMs(config.movementFrequencyMs),
+      boostedMovementFrequencyMs(config.boostedMovementFrequencyMs),
+      boostDurationMs(config.boostDurationMs),
       timer {},
-      seed {std::random_device {}()},
+      seed {config.seed},
       gen {seed},
-      msgLogWriter {applicationName_},
+      msgLogWriter {config.applicationName},
       serverHighScore {},
-      network {SERVER_PORT},
+      network {config.port},
       clientIdToPlayerMap {},
       occupiedCellsBodies {},
       occupiedCellsHeads {},
@@ -27,7 +27,7 @@ SnakeServer::SnakeServer(const int width_, const int height_, const std::string 
       speedBoostMap {} {}
 
 void SnakeServer::run() {
-    recordSessionConfig();
+    recordServerConfig();
     while (true) {
         replaceFood();
         std::vector<ProtocolMessage> messages {network.pollMessages()};
@@ -66,12 +66,12 @@ void SnakeServer::run() {
     }
 }
 
-void SnakeServer::recordSessionConfig() {
+void SnakeServer::recordServerConfig() {
     json sessionConfig;
     sessionConfig["width"] = width;
     sessionConfig["height"] = height;
     sessionConfig["seed"] = seed;
-    ProtocolMessage pm {MessageType::SESSION_CONFIG, sessionConfig.dump()};
+    ProtocolMessage pm {MessageType::SERVER_CONFIG, sessionConfig.dump()};
     stampMessage(pm);
     msgLogWriter.log(pm);
 }
