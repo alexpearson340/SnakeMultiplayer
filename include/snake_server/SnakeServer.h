@@ -33,11 +33,11 @@ private:
     void placeSpeedBoost();
     void broadcastGameState();
     std::string buildGameStatePayload();
-    void logGameState();
-    void logOccupiedCells();
+    void stampMessage(ProtocolMessage &);
 
     int width;
     int height;
+    int64_t currentSequence;
     std::chrono::milliseconds movementFrequencyMs;
     std::chrono::milliseconds boostedMovementFrequencyMs;
     std::chrono::milliseconds boostDurationMs;

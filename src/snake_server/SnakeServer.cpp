@@ -10,6 +10,7 @@
 SnakeServer::SnakeServer(const int width_, const int height_, const std::string & applicationName_)
     : width {width_},
       height {height_},
+      currentSequence {0},
       movementFrequencyMs(std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS)),
       boostedMovementFrequencyMs(std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS)),
       boostDurationMs(std::chrono::milliseconds(SPEED_BOOST_DURATION_MS)),
@@ -32,7 +33,7 @@ void SnakeServer::run() {
         bool stateChanged = false;
 
         for (auto msg : messages) {
-            msg.transactTime = timer.currentTickAsNanos();
+            stampMessage(msg);
             msgLogWriter.log(msg);
             switch (msg.messageType) {
             case MessageType::CLIENT_JOIN:
@@ -68,7 +69,8 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    ProtocolMessage pm {MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId, timer.currentTickAsNanos()};
+    ProtocolMessage pm {MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId};
+    stampMessage(pm);
     msgLogWriter.log(pm);
     network.sendToClient(msg.clientId, pm);
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
@@ -300,7 +302,8 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    ProtocolMessage pm {MessageType::GAME_STATE, buildGameStatePayload(), -1, timer.currentTickAsNanos()};
+    ProtocolMessage pm {MessageType::GAME_STATE, buildGameStatePayload()};
+    stampMessage(pm);
     msgLogWriter.log(pm);
     network.broadcast(pm);
 }
@@ -352,4 +355,9 @@ std::string SnakeServer::buildGameStatePayload() {
     }
 
     return gameState.dump();
+}
+
+void SnakeServer::stampMessage(ProtocolMessage & msg) {
+    msg.sequence = currentSequence++;
+    msg.transactTime = timer.currentTickAsNanos();
 }
