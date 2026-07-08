@@ -37,7 +37,7 @@ void SnakeBot::joinGame() {
         username = "unknown";
     spdlog::info("Sending join game request as " + std::string(username, 3));
 
-    network.joinBot(protocol::toString(ProtocolMessage {MessageType::CLIENT_JOIN, -1, username}));
+    network.joinBot(protocol::toString(ProtocolMessage {MessageType::CLIENT_JOIN, username}));
     spdlog::info("Sent join game request for " + std::string(username, 3));
 }
 
@@ -92,7 +92,7 @@ void SnakeBot::sendInput() {
         // char input {calculateRandomMove()};
         const char input {calculatePathingMove()};
         network.sendToServer(
-            clientId, protocol::toString(ProtocolMessage {MessageType::CLIENT_INPUT, clientId, std::string(1, input)}));
+            clientId, protocol::toString(ProtocolMessage {MessageType::CLIENT_INPUT, std::string(1, input), clientId}));
     }
 }
 

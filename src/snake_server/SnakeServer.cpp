@@ -26,12 +26,13 @@ SnakeServer::SnakeServer(const int width_, const int height_, const std::string 
 
 void SnakeServer::run() {
     while (true) {
-        timer.tick();
         replaceFood();
         std::vector<ProtocolMessage> messages {network.pollMessages()};
+        timer.tick();
         bool stateChanged = false;
 
         for (auto msg : messages) {
+            msg.transactTime = timer.currentTickAsNanos();
             msgLogWriter.log(msg);
             switch (msg.messageType) {
             case MessageType::CLIENT_JOIN:
@@ -67,7 +68,7 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    ProtocolMessage pm {MessageType::SERVER_WELCOME, msg.clientId, ""};
+    ProtocolMessage pm {MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId, timer.currentTickAsNanos()};
     msgLogWriter.log(pm);
     network.sendToClient(msg.clientId, pm);
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
@@ -231,8 +232,6 @@ void SnakeServer::checkCollisions() {
         }
     }
     if (!clientIdsToDestroy.empty()) {
-        logGameState();
-        logOccupiedCells();
         destroyPlayers(clientIdsToDestroy);
     }
 }
@@ -301,7 +300,7 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    ProtocolMessage pm {MessageType::GAME_STATE, -1, buildGameStatePayload()};
+    ProtocolMessage pm {MessageType::GAME_STATE, buildGameStatePayload(), -1, timer.currentTickAsNanos()};
     msgLogWriter.log(pm);
     network.broadcast(pm);
 }
@@ -353,32 +352,4 @@ std::string SnakeServer::buildGameStatePayload() {
     }
 
     return gameState.dump();
-}
-
-void SnakeServer::logGameState() {
-    spdlog::debug("Game state: " + buildGameStatePayload());
-}
-
-void SnakeServer::logOccupiedCells() {
-    std::string msg {};
-    msg += "Occupied cells (bodies):";
-    for (auto & [cell, players] : occupiedCellsBodies) {
-        msg += "(" + std::to_string(cell.first) + ", " + std::to_string(cell.second) + "): {";
-        for (auto & player : players) {
-            msg += std::to_string(player) + " ";
-        }
-        msg += "}";
-    }
-    spdlog::debug(msg);
-
-    msg = "";
-    msg += "Occupied cells (heads):";
-    for (auto & [cell, players] : occupiedCellsHeads) {
-        msg += "(" + std::to_string(cell.first) + ", " + std::to_string(cell.second) + "): {";
-        for (auto & player : players) {
-            msg += std::to_string(player) + " ";
-        }
-        msg += "}";
-    }
-    spdlog::debug(msg);
 }

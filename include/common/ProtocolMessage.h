@@ -14,21 +14,25 @@ enum class MessageType {
 
 struct ProtocolMessage {
     MessageType messageType;
-    int clientId;
     std::string message;
+    int clientId {-1};
+    int64_t transactTime {-1};
 };
 
 namespace protocol {
 
     inline std::string toString(const ProtocolMessage & msg) {
-        json j {
-            {"message_type", static_cast<int>(msg.messageType)}, {"client_id", msg.clientId}, {"message", msg.message}};
+        json j {{"message_type", static_cast<int>(msg.messageType)},
+                {"message", msg.message},
+                {"client_id", msg.clientId},
+                {"transact_time", msg.transactTime}};
         return j.dump() + '\n';
     }
 
     inline ProtocolMessage fromString(const std::string_view str) {
         json j = json::parse(str);
-        return {static_cast<MessageType>(j["message_type"]), j["client_id"], j["message"]};
+        return {static_cast<MessageType>(j["message_type"]), j["message"], j["client_id"],
+                static_cast<int64_t>(j["transact_time"])};
     }
 
     inline ProtocolMessage fromString(const std::string_view str, int clientId) {

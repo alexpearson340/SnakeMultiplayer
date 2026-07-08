@@ -7,8 +7,7 @@
 
 class MessageLogWriter {
 public:
-    explicit MessageLogWriter(const std::string & applicationName)
-        : out {applicationName + ".jsonl", std::ios::out} {
+    explicit MessageLogWriter(const std::string & applicationName) : out {applicationName + ".jsonl", std::ios::out} {
         if (!out) {
             throw std::runtime_error("Failed to open log file " + applicationName + ".jsonl");
         }

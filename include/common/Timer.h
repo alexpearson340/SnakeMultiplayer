@@ -9,7 +9,10 @@ class Timer {
 public:
     Timer();
     void tick();
-    std::chrono::time_point<std::chrono::steady_clock> currentTick() { return currentGameTick; };
+    std::chrono::time_point<std::chrono::steady_clock> currentTick() const { return currentGameTick; };
+    int64_t currentTickAsNanos() const {
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(currentGameTick.time_since_epoch()).count();
+    };
 
 private:
     std::chrono::time_point<std::chrono::steady_clock> currentGameTick;
