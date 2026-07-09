@@ -15,7 +15,6 @@ public:
 
     void log(const ProtocolMessage & msg) {
         out << protocol::toString(msg);
-        out.flush();
     }
 
 private:

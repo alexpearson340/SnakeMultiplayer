@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common/Hash.h"
+#include "common/MessageLogReader.h"
 #include "common/MessageLogWriter.h"
 #include "common/Timer.h"
 #include "snake_server/NetworkServer.h"
@@ -13,12 +14,14 @@
 
 class SnakeServer {
 public:
-    SnakeServer(const ServerConfig &);
+    SnakeServer(const ServerConfig &, std::optional<MessageLogReader> &&);
     void run();
 
 private:
     void recordServerConfig();
     void stampMessage(ProtocolMessage &);
+    bool isInReplay() const;
+    std::optional<std::vector<ProtocolMessage>> pollMessages();
     void handleClientJoin(const ProtocolMessage &);
     void handleClientDisconnect(const ProtocolMessage &);
     void handleClientInput(const ProtocolMessage &);
@@ -49,6 +52,7 @@ private:
     MessageLogWriter msgLogWriter;
     std::pair<std::string, int> serverHighScore;
 
+    std::optional<MessageLogReader> replayFile;
     NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;
     std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsBodies;

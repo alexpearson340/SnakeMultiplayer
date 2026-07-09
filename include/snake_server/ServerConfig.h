@@ -16,7 +16,7 @@ struct ServerConfig {
     const int port;
     const int width;
     const int height;
-    const std::uint32_t seed;   
+    const std::uint32_t seed;
     const std::chrono::milliseconds movementFrequencyMs;
     const std::chrono::milliseconds boostedMovementFrequencyMs;
     const std::chrono::milliseconds boostDurationMs;

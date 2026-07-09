@@ -5,12 +5,11 @@
 
 enum class MessageType {
     SERVER_CONFIG = 0,     // contains parameters such as the random seed used
-    CLIENT_CONNECT = 1,    // first contact between client and server
+    CLIENT_JOIN = 1,       // client to server, introduces the client
     CLIENT_DISCONNECT = 2, // end of contact between client and server
-    CLIENT_JOIN = 3,       // client to server, introduces the client
-    SERVER_WELCOME = 4,    // server acknowledgement of client join
-    CLIENT_INPUT = 5,      // client input of actions to server
-    GAME_STATE = 6         // server broadcast of game state out to clients
+    SERVER_WELCOME = 3,    // server acknowledgement of client join
+    CLIENT_INPUT = 4,      // client input of actions to server
+    GAME_STATE = 5         // server broadcast of game state out to clients
 };
 
 struct ProtocolMessage {

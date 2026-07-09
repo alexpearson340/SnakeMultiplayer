@@ -15,10 +15,10 @@ int main() {
     std::optional<ProtocolMessage> header;
     if (std::filesystem::exists(replayPath)) {
         reader.emplace(replayPath);
-        header = reader->next();
-    }   
+        header = reader->first();
+    }
 
-    SnakeServer server {initServerConfig(applicationName, header)};
+    SnakeServer server {initServerConfig(applicationName, header), std::move(reader)};
     server.run();
     return 0;
 }

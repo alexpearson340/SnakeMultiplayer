@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <string>
 
-SnakeServer::SnakeServer(const ServerConfig & config)
+SnakeServer::SnakeServer(const ServerConfig & config, std::optional<MessageLogReader> && reader)
     : width {config.width},
       height {config.height},
       currentSequence {0},
@@ -19,6 +19,7 @@ SnakeServer::SnakeServer(const ServerConfig & config)
       gen {seed},
       msgLogWriter {config.applicationName},
       serverHighScore {},
+      replayFile {std::move(reader)},
       network {config.port},
       clientIdToPlayerMap {},
       occupiedCellsBodies {},
@@ -28,13 +29,10 @@ SnakeServer::SnakeServer(const ServerConfig & config)
 
 void SnakeServer::run() {
     recordServerConfig();
-    while (true) {
+    while (std::optional<std::vector<ProtocolMessage>> messages = pollMessages()) {
         replaceFood();
-        std::vector<ProtocolMessage> messages {network.pollMessages()};
-        timer.tick();
         bool stateChanged = false;
-
-        for (auto msg : messages) {
+        for (auto & msg : messages.value()) {
             stampMessage(msg);
             msgLogWriter.log(msg);
             switch (msg.messageType) {
@@ -81,6 +79,33 @@ void SnakeServer::stampMessage(ProtocolMessage & msg) {
     msg.transactTime = timer.currentTickAsNanos();
 }
 
+bool SnakeServer::isInReplay() const {
+    return replayFile.has_value();
+}
+
+std::optional<std::vector<ProtocolMessage>> SnakeServer::pollMessages() {
+    std::vector<ProtocolMessage> messages;
+    if (isInReplay()) {
+        std::vector<ProtocolMessage> fileMessages {replayFile->nextBatch()};
+        if (!fileMessages.empty()) {
+            for (auto & pm : fileMessages) {
+                timer.setTick(pm.transactTime);
+                if (pm.messageType != MessageType::SERVER_WELCOME && pm.messageType != MessageType::GAME_STATE) {
+                    messages.push_back(pm);
+                }
+            }
+        } else {
+            spdlog::info("Exiting replay mode currentSequence=" + std::to_string(currentSequence));
+            replayFile.reset();
+            return std::nullopt;
+        }
+    } else {
+        messages = network.pollMessages();
+        timer.tick();
+    }
+    return messages;
+}
+
 void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     spdlog::info("Received client join request from " + msg.message);
     createNewPlayer(msg);
@@ -89,7 +114,9 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     ProtocolMessage pm {MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId};
     stampMessage(pm);
     msgLogWriter.log(pm);
-    network.sendToClient(msg.clientId, pm);
+    if (!isInReplay()) {
+        network.sendToClient(msg.clientId, pm);
+    }
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
     spdlog::info("Sent client welcome to " + msg.message);
 }
@@ -288,7 +315,7 @@ void SnakeServer::boostPlayer(std::pair<int, int> & playerCell, const int client
 }
 
 void SnakeServer::replaceFood() {
-    if (foodMap.size() < MIN_FOOD_IN_ARENA) {
+    while (foodMap.size() < MIN_FOOD_IN_ARENA) {
         placeFood();
     }
 }
@@ -322,7 +349,9 @@ void SnakeServer::broadcastGameState() {
     ProtocolMessage pm {MessageType::GAME_STATE, buildGameStatePayload()};
     stampMessage(pm);
     msgLogWriter.log(pm);
-    network.broadcast(pm);
+    if (!isInReplay()) {
+        network.broadcast(pm);
+    }
 }
 
 std::string SnakeServer::buildGameStatePayload() {
