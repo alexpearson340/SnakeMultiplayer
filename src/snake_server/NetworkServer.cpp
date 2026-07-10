@@ -1,6 +1,7 @@
 #include "snake_server/NetworkServer.h"
 #include "common/Constants.h"
 #include "common/Log.h"
+#include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -10,7 +11,7 @@
 #include <unistd.h>
 
 NetworkServer::NetworkServer(int port)
-    : serverFd {-1}, epollFd {-1}, nextClientId {1}, fdToClientIdMap {}, clientIdToFdMap {}, fdToBufferMap {} {
+    : serverFd {-1}, epollFd {-1}, nextClientId {1}, fdToClientIdMap {}, clientIdToFdMap {}, fdToBufferMap {}, fdsToDisconnect {} {
     startServer(port);
 }
 
@@ -71,6 +72,14 @@ std::vector<ProtocolMessage> NetworkServer::pollMessages() {
             }
         }
     }
+
+    // handle clients to be disconnected if there was an issue with their send
+    for (int fd : fdsToDisconnect) {
+        if (fdToClientIdMap.contains(fd)) {
+            messages.push_back(disconnectClient(fd));
+        }
+    }
+    fdsToDisconnect.clear();
     return messages;
 }
 
@@ -116,26 +125,29 @@ void NetworkServer::acceptNewClient() {
     }
 }
 
+ProtocolMessage NetworkServer::disconnectClient(const int fd) {
+    spdlog::info("Disconnecting client fd={}", fd);
+    assert(fdToClientIdMap.contains(fd) && "disconnectClient: fd already gone");
+
+    ProtocolMessage msg;
+    msg.messageType = MessageType::CLIENT_DISCONNECT;
+    msg.clientId = fdToClientIdMap.at(fd);
+
+    // Remove from epoll
+    epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
+    close(fd);
+    fdToClientIdMap.erase(fd);
+    clientIdToFdMap.erase(msg.clientId);
+    fdToBufferMap.erase(fd);
+    return msg;
+}
+
 std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
     char buffer[1024];
     ssize_t bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
     if (bytesRead <= 0) {
-        // Connection closed or error
-        spdlog::info("Client disconnected (fd: " + std::to_string(fd) + ")");
-
-        ProtocolMessage msg;
-        msg.messageType = MessageType::CLIENT_DISCONNECT;
-        msg.clientId = fdToClientIdMap.at(fd);
-
-        // Remove from epoll
-        epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
-        close(fd);
-        fdToClientIdMap.erase(fd);
-        clientIdToFdMap.erase(msg.clientId);
-        fdToBufferMap.erase(fd);
-
-        return std::vector<ProtocolMessage> {msg};
+        return std::vector<ProtocolMessage> {disconnectClient(fd)};
     }
 
     return parseReceivedPacket(fd, buffer, static_cast<size_t>(bytesRead));
@@ -154,15 +166,31 @@ std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char * b
     return messages;
 }
 
-void NetworkServer::sendToClient(int clientId, ProtocolMessage msg) {
+void NetworkServer::sendToClient(const int clientId, const ProtocolMessage & msg) {
     std::string msgString {protocol::toString(msg)};
-    int fd {clientIdToFdMap.at(clientId)};
-    send(fd, msgString.data(), msgString.size(), 0);
+    networkSend(clientIdToFdMap.at(clientId), msgString); 
 }
 
-void NetworkServer::broadcast(ProtocolMessage msg) {
+void NetworkServer::broadcast(const ProtocolMessage & msg) {
     std::string msgString {protocol::toString(msg)};
     for (const auto & [fd, clientId] : fdToClientIdMap) {
-        send(fd, msgString.data(), msgString.size(), 0);
+        networkSend(fd, msgString);
+    }
+}
+
+void NetworkServer::networkSend(const int fd, const std::string & msgString) {
+    size_t size {msgString.size()};
+    ssize_t n {send(fd, msgString.data(), size, 0)};
+    
+    // treat partial sends, and all error codes
+    // as a client disconnect. Buffer + retry on
+    // partial sends and EAGAIN is todo
+    if (0 <= n && static_cast<size_t>(n) < size) {
+        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd, size, n);
+        fdsToDisconnect.insert(fd);
+    }
+    else if (n == -1) {
+        spdlog::warn("Error receieved {} on send for fd={}, disconnecting the client", errno, fd);
+        fdsToDisconnect.insert(fd);
     }
 }
