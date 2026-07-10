@@ -7,6 +7,10 @@
 #include <string>
 
 int main() {
+    // Process wide setting - don't crash the server when trying to write to a 
+    // closed socket. Just move on and let epoll surface the client disconnect
+    signal(SIGPIPE, SIG_IGN);
+
     const std::string applicationName {"snake_server"};
     initLogging(applicationName, false, true);
 
