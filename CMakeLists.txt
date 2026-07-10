@@ -28,6 +28,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(spdlog)
 
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG v1.15.2
+    SYSTEM
+)
+FetchContent_MakeAvailable(googletest)
+
 # On macOS/BSD there is no native epoll; epoll-shim provides the epoll API
 # (sys/epoll.h) implemented on top of kqueue.Linux uses the kernel's epoll directly.
 if(APPLE)
@@ -136,6 +144,10 @@ target_link_libraries(
     snake_bot
     snake_bot_lib
 )
+
+# TESTS
+enable_testing()
+add_subdirectory(tests)
 
 # copy compile_commands.json to project root
 add_custom_target(
