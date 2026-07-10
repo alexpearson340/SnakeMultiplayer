@@ -39,6 +39,7 @@ private:
     void placeSpeedBoost();
     void broadcastGameState();
     std::string buildGameStatePayload();
+    void logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> &, const int64_t &);
 
     int width;
     int height;

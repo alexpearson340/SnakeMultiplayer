@@ -29,7 +29,11 @@ SnakeServer::SnakeServer(const ServerConfig & config, std::optional<MessageLogRe
 
 void SnakeServer::run() {
     recordServerConfig();
+    const std::chrono::time_point<std::chrono::steady_clock> start {std::chrono::steady_clock::now()};
+    int64_t ticks {0};
+
     while (std::optional<std::vector<ProtocolMessage>> messages = pollMessages()) {
+        ticks++;
         replaceFood();
         bool stateChanged = false;
         for (auto & msg : messages.value()) {
@@ -62,6 +66,7 @@ void SnakeServer::run() {
             broadcastGameState();
         }
     }
+    logEngineBenchmark(start, ticks);
 }
 
 void SnakeServer::recordServerConfig() {
@@ -401,4 +406,13 @@ std::string SnakeServer::buildGameStatePayload() {
     }
 
     return gameState.dump();
+}
+
+void SnakeServer::logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> & start,
+                                     const int64_t & ticks) {
+    const int64_t ns {
+        std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - start).count()};
+    const double engineMs {static_cast<double>(ns) / 1.0e6};
+    const double usPerTick {ticks ? static_cast<double>(ns) / 1000.0 / static_cast<double>(ticks) : 0.0};
+    spdlog::info("BENCH ticks={} engine_ms={:.3f} us_per_tick={:.3f}", ticks, engineMs, usPerTick);
 }
