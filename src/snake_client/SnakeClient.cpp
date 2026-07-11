@@ -39,9 +39,8 @@ void SnakeClient::joinGame() {
     const char * username = getenv("USER");
     if (!username)
         username = "unknown";
-
-    ProtocolMessage clientJoinMessage {MessageType::CLIENT_JOIN, username, clientId};
-    network.sendToServer(protocol::toString(clientJoinMessage));
+    ProtocolMessage pm {MessageType::CLIENT_JOIN, username, clientId};
+    network.sendToServer(pm);
 }
 
 void SnakeClient::handleInput() {
@@ -65,8 +64,8 @@ void SnakeClient::handleInput() {
 }
 
 void SnakeClient::sendPlayerInput() {
-    ProtocolMessage playerInputMessage {MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId};
-    network.sendToServer(protocol::toString(playerInputMessage));
+    ProtocolMessage pm {MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId};
+    network.sendToServer(pm);
     playerInput = '\0';
 }
 

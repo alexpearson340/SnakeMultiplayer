@@ -37,12 +37,13 @@ void SnakeBot::joinGame() {
         username = "unknown";
     spdlog::info("Sending join game request as " + std::string(username, 3));
 
-    network.joinBot(protocol::toString(ProtocolMessage {MessageType::CLIENT_JOIN, username}));
+    ProtocolMessage pm {MessageType::CLIENT_JOIN, username, clientId};
+    network.sendToServer(pm);
     spdlog::info("Sent join game request for " + std::string(username, 3));
 }
 
 void SnakeBot::receiveUpdates() {
-    std::vector<ProtocolMessage> messages {network.pollMessages()};
+    std::vector<ProtocolMessage> messages {network.receiveFromServer()};
     ProtocolMessage * latestGameState {nullptr};
 
     for (auto & msg : messages) {
@@ -77,7 +78,6 @@ void SnakeBot::handleGameStateMessage(const ProtocolMessage & msg) {
     gameState = client::parseGameState(msg.message);
     if (clientId != -1 && !gameState.players.contains(clientId)) {
         // this means that we just died
-        network.destroyBot(clientId);
         clientId = -1;
     }
     buildArenaMap();
@@ -91,8 +91,8 @@ void SnakeBot::sendInput() {
     if (gameState.players.contains(clientId)) {
         // char input {calculateRandomMove()};
         const char input {calculatePathingMove()};
-        network.sendToServer(
-            clientId, protocol::toString(ProtocolMessage {MessageType::CLIENT_INPUT, std::string(1, input), clientId}));
+        ProtocolMessage pm {MessageType::CLIENT_INPUT, std::string(1, input), clientId};
+        network.sendToServer(pm);
     }
 }
 

@@ -57,10 +57,11 @@ void NetworkClient::setNonBlocking(int fd) {
     }
 }
 
-void NetworkClient::sendToServer(std::string_view msg) {
-    size_t size {msg.size()};
+void NetworkClient::sendToServer(const ProtocolMessage & msg) {
+    std::string msgString {protocol::toString(msg)};
+    size_t size {msgString.size()};
 
-    ssize_t sent = send(serverFd, msg.data(), msg.size(), 0);
+    ssize_t sent = send(serverFd, msgString.data(), size, 0);
     if (0 <= sent && static_cast<size_t>(sent) < size) {
         throw std::runtime_error(fmt::format("Partial send to server, tried to send {} bytes, actually sent {}, exiting", size, sent));
     }

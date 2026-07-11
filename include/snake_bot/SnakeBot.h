@@ -1,6 +1,5 @@
 #pragma once
 
-#include "BotNetwork.h"
 #include "common/Timer.h"
 #include "snake_bot/Pathfinder.h"
 #include "snake_client/GameState.h"
@@ -28,7 +27,7 @@ private:
     int clientId;
     Timer timer;
     std::mt19937 gen;
-    BotNetwork network;
+    NetworkClient network;
     client::GameState gameState;
     Pathfinder pathfinder;
 };

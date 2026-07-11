@@ -20,7 +20,7 @@ public:
     ~NetworkClient();
 
     int getServerFd() const { return serverFd; };
-    void sendToServer(std::string_view msg);
+    void sendToServer(const ProtocolMessage &);
     std::vector<ProtocolMessage> receiveFromServer();
 
 private:
