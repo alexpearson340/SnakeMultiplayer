@@ -112,8 +112,16 @@ std::optional<std::vector<ProtocolMessage>> SnakeServer::pollMessages() {
             return std::nullopt;
         }
     } else {
-        messages = network.pollMessages();
+        std::vector<std::pair<int, Bytes>> networkMessages {network.pollMessages()};
+        for (auto & [clientId, frame] : networkMessages) {
+            messages.push_back(protocol::fromString(frame, clientId));
+        }
         timer.tick();
+    }
+
+    // check for client disconnects and sythesise the messages we need
+    for (int clientId : network.drainDisconnects()) {
+        messages.push_back({MessageType::CLIENT_DISCONNECT, "", clientId});
     }
     return messages;
 }
@@ -127,7 +135,7 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     stampMessage(pm);
     msgLogWriter.log(pm);
     if (!isInReplay()) {
-        network.sendToClient(msg.clientId, pm);
+        network.sendToClient(msg.clientId, protocol::toString(pm));
     }
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
     spdlog::info("Sent client welcome to " + msg.message);
@@ -362,7 +370,7 @@ void SnakeServer::broadcastGameState() {
     stampMessage(pm);
     msgLogWriter.log(pm);
     if (!isInReplay()) {
-        network.broadcast(pm);
+        network.broadcast(protocol::toString(pm));
     }
 }
 

@@ -3,6 +3,8 @@
 #include "common/Json.h"
 #include <string>
 
+using Bytes = std::string;
+
 enum class MessageType {
     SERVER_CONFIG = 0,     // contains parameters such as the random seed used
     CLIENT_JOIN = 1,       // client to server, introduces the client
@@ -31,13 +33,13 @@ namespace protocol {
         return j.dump() + '\n';
     }
 
-    inline ProtocolMessage fromString(const std::string_view str) {
+    inline ProtocolMessage fromString(const Bytes & str) {
         json j = json::parse(str);
         return {static_cast<MessageType>(j["message_type"]), j["message"], j["client_id"],
                 static_cast<int64_t>(j["sequence"]), static_cast<int64_t>(j["transact_time"])};
     }
 
-    inline ProtocolMessage fromString(const std::string_view str, int clientId) {
+    inline ProtocolMessage fromString(const Bytes & str, int clientId) {
         ProtocolMessage pm {fromString(str)};
         pm.clientId = clientId;
         return pm;

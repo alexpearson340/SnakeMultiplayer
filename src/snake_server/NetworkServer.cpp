@@ -1,6 +1,7 @@
 #include "snake_server/NetworkServer.h"
 #include "common/Constants.h"
 #include "common/Log.h"
+#include <cassert>
 #include <cerrno>
 #include <cstring>
 #include <fcntl.h>
@@ -58,29 +59,36 @@ void NetworkServer::startServer(int port) {
     spdlog::info("Server listening on port " + std::to_string(port));
 }
 
-std::vector<ProtocolMessage> NetworkServer::pollMessages() {
-    std::vector<ProtocolMessage> messages;
+std::vector<std::pair<int, Bytes>> NetworkServer::pollMessages() {
+    assert(fdsToDisconnect.empty() && "fds awaiting destruction at start of fresh pollMessages loop");
+
+    std::vector<std::pair<int, Bytes>> messages;
     epoll_event events[MAX_EVENTS];
     int numEvents = epoll_wait(epollFd, events, MAX_EVENTS, EPOLL_BLOCKING_TIMEOUT_MS);
 
     for (int i = 0; i < numEvents; i++) {
-        if (events[i].data.fd == serverFd) {
+        int fd {events[i].data.fd};
+        if (fd == serverFd) {
             acceptNewClient();
         } else {
-            for (ProtocolMessage pm : receiveFromClient(events[i].data.fd)) {
-                messages.push_back(pm);
+            for (Bytes bytes : receiveFromClient(fd)) {
+                messages.push_back({fdToClientIdMap.at(fd), bytes});
             }
         }
     }
+    return messages;
+}
 
-    // handle clients to be disconnected if there was an issue with their send
+std::vector<int> NetworkServer::drainDisconnects() {
+    std::vector<int> clientIds;
     for (int fd : fdsToDisconnect) {
         if (fdToClientIdMap.contains(fd)) {
-            messages.push_back(disconnectClient(fd));
+            clientIds.push_back(fdToClientIdMap.at(fd));
+            disconnectClient(fd);
         }
     }
     fdsToDisconnect.clear();
-    return messages;
+    return clientIds;
 }
 
 void NetworkServer::setNonBlocking(int fd) {
@@ -125,24 +133,19 @@ void NetworkServer::acceptNewClient() {
     }
 }
 
-ProtocolMessage NetworkServer::disconnectClient(const int fd) {
+void NetworkServer::disconnectClient(const int fd) {
     spdlog::info("Disconnecting client fd={}", fd);
     assert(fdToClientIdMap.contains(fd) && "disconnectClient: fd already gone");
-
-    ProtocolMessage msg;
-    msg.messageType = MessageType::CLIENT_DISCONNECT;
-    msg.clientId = fdToClientIdMap.at(fd);
 
     // Remove from epoll
     epoll_ctl(epollFd, EPOLL_CTL_DEL, fd, nullptr);
     close(fd);
+    clientIdToFdMap.erase(fdToClientIdMap.at(fd));
     fdToClientIdMap.erase(fd);
-    clientIdToFdMap.erase(msg.clientId);
     fdToBufferMap.erase(fd);
-    return msg;
 }
 
-std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
+std::vector<Bytes> NetworkServer::receiveFromClient(int fd) {
     char buffer[1024];
     ssize_t bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
@@ -151,43 +154,41 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
             return {};
         } else {
             spdlog::warn("Retrieved errno {} on recv from fd={}", errno, fd);
-            return std::vector<ProtocolMessage> {disconnectClient(fd)};
+            fdsToDisconnect.insert(fd);
+            return {};
         };
     } else if (bytesRead == 0) {
-        return std::vector<ProtocolMessage> {disconnectClient(fd)};
+        fdsToDisconnect.insert(fd);
+        return {};
     }
 
     return parseReceivedPacket(fd, buffer, static_cast<size_t>(bytesRead));
 }
 
-std::vector<ProtocolMessage> NetworkServer::parseReceivedPacket(int fd, char * buffer, size_t size) {
-    std::vector<ProtocolMessage> messages {};
-    fdToBufferMap[fd] += std::string(buffer, size);
+std::vector<Bytes> NetworkServer::parseReceivedPacket(int fd, char * buffer, size_t size) {
+    std::vector<Bytes> frames {};
+    fdToBufferMap[fd] += Bytes(buffer, size);
     size_t pos;
-    while ((pos = fdToBufferMap.at(fd).find('\n')) != std::string::npos) {
-        std::string msg {fdToBufferMap.at(fd).substr(0, pos)};
-        ProtocolMessage pm {protocol::fromString(msg, fdToClientIdMap.at(fd))};
-        messages.push_back(pm);
+    while ((pos = fdToBufferMap.at(fd).find('\n')) != Bytes::npos) {
+        frames.push_back(fdToBufferMap.at(fd).substr(0, pos));
         fdToBufferMap.at(fd).erase(0, pos + 1);
     }
-    return messages;
+    return frames;
 }
 
-void NetworkServer::sendToClient(const int clientId, const ProtocolMessage & msg) {
-    std::string msgString {protocol::toString(msg)};
-    networkSend(clientIdToFdMap.at(clientId), msgString); 
+void NetworkServer::sendToClient(const int clientId, const Bytes & bytes) {
+    networkSend(clientIdToFdMap.at(clientId), bytes); 
 }
 
-void NetworkServer::broadcast(const ProtocolMessage & msg) {
-    std::string msgString {protocol::toString(msg)};
+void NetworkServer::broadcast(const Bytes & bytes) {
     for (const auto & [fd, clientId] : fdToClientIdMap) {
-        networkSend(fd, msgString);
+        networkSend(fd, bytes);
     }
 }
 
-void NetworkServer::networkSend(const int fd, const std::string & msgString) {
-    size_t size {msgString.size()};
-    ssize_t sent {send(fd, msgString.data(), size, 0)};
+void NetworkServer::networkSend(const int fd, const Bytes & bytes) {
+    size_t size {bytes.size()};
+    ssize_t sent {send(fd, bytes.data(), size, 0)};
     
     // treat partial sends, and all error codes
     // as a client disconnect. Buffer + retry on
