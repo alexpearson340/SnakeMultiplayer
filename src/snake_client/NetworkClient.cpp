@@ -1,6 +1,7 @@
 #include "snake_client/NetworkClient.h"
 #include "common/Log.h"
 #include <arpa/inet.h>
+#include <cerrno>
 #include <cstring>
 #include <fcntl.h>
 #include <netinet/in.h>
@@ -8,7 +9,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-NetworkClient::NetworkClient(const std::string & host, int port) : serverFd {-1}, connected {false}, messageBuffer {} {
+NetworkClient::NetworkClient(const std::string & host, int port) : serverFd {-1}, messageBuffer {} {
     connectToServer(host, port);
 }
 
@@ -44,7 +45,6 @@ void NetworkClient::connectToServer(const std::string & host, int port) {
     }
 
     setNonBlocking(serverFd);
-    connected = true;
 }
 
 void NetworkClient::setNonBlocking(int fd) {
@@ -58,35 +58,30 @@ void NetworkClient::setNonBlocking(int fd) {
 }
 
 void NetworkClient::sendToServer(std::string_view msg) {
-    if (!connected) {
-        throw std::runtime_error("Not connected to server");
-    }
+    size_t size {msg.size()};
 
     ssize_t sent = send(serverFd, msg.data(), msg.size(), 0);
-    if (sent < 0) {
-        throw std::runtime_error("Send failed");
+    if (0 <= sent && static_cast<size_t>(sent) < size) {
+        throw std::runtime_error(fmt::format("Partial send to server, tried to send {} bytes, actually sent {}, exiting", size, sent));
+    }
+    else if (sent == -1) {
+        throw std::runtime_error(fmt::format("Error receieved {} on send to server, exiting", errno));
     }
 }
 
 std::vector<ProtocolMessage> NetworkClient::receiveFromServer() {
-    if (!connected) {
-        throw std::runtime_error("Not connected to server");
-    }
-
     char buffer[4096];
     ssize_t bytesRead = recv(serverFd, buffer, sizeof(buffer) - 1, 0);
 
     if (bytesRead < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return std::vector<ProtocolMessage> {};
+            return {};
         }
-        connected = false;
-        throw std::runtime_error("Receive failed");
+        throw std::runtime_error(fmt::format("Error on recv from server, errno {}", errno));
     }
 
     if (bytesRead == 0) {
-        connected = false;
-        throw std::runtime_error("Server disconnected");
+        throw std::runtime_error(fmt::format("Server disconnected, exiting"));
     }
 
     return parseReceivedPacket(buffer, static_cast<size_t>(bytesRead));

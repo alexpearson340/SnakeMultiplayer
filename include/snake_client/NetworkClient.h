@@ -29,6 +29,5 @@ private:
     std::vector<ProtocolMessage> parseReceivedPacket(char * buffer, size_t size);
 
     int serverFd;
-    bool connected;
     std::string messageBuffer;
 };
