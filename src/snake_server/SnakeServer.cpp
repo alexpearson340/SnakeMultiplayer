@@ -74,6 +74,13 @@ void SnakeServer::recordServerConfig() {
     sessionConfig["width"] = width;
     sessionConfig["height"] = height;
     sessionConfig["seed"] = seed;
+    sessionConfig["movement_frequency_ms"] = movementFrequencyMs.count();
+    sessionConfig["boosted_movement_frequency_ms"] = boostedMovementFrequencyMs.count();
+    sessionConfig["boost_duration_ms"] = boostDurationMs.count();
+    sessionConfig["min_food_in_arena"] = MIN_FOOD_IN_ARENA;
+    sessionConfig["food_spawn_from_body_segment_probability"] = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
+    sessionConfig["speed_boost_probability"] = SPEED_BOOST_PROBABILITY;
+    sessionConfig["speed_boost_ratio"] = SPEED_BOOST_RATIO;
     ProtocolMessage pm {MessageType::SERVER_CONFIG, sessionConfig.dump()};
     stampMessage(pm);
     msgLogWriter.log(pm);
