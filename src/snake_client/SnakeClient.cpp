@@ -172,11 +172,16 @@ void SnakeClient::renderScore() {
     int row = height + 6;
     mvprintw(row++, 0, "+----------- SCOREBOARD -----------+");
 
+    int playersPrintedToScoreboard {0};
     for (auto & p : sortedPlayers) {
         mvprintw(row, 0, "| ");
         mvaddch(row, 2, '#' | COLOR_PAIR(p.color));
         mvprintw(row, 4, "%-22s %7d |", p.name.c_str(), p.score);
         row++;
+        playersPrintedToScoreboard++;
+        if (playersPrintedToScoreboard == 5) {
+            break;
+        }
     }
 
     mvprintw(row, 0, "+----------------------------------+");
