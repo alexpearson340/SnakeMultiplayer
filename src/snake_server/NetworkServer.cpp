@@ -146,7 +146,14 @@ std::vector<ProtocolMessage> NetworkServer::receiveFromClient(int fd) {
     char buffer[1024];
     ssize_t bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
 
-    if (bytesRead <= 0) {
+    if (bytesRead < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return {};
+        } else {
+            spdlog::warn("Retrieved errno {} on recv from fd={}", errno, fd);
+            return std::vector<ProtocolMessage> {disconnectClient(fd)};
+        };
+    } else if (bytesRead == 0) {
         return std::vector<ProtocolMessage> {disconnectClient(fd)};
     }
 
@@ -180,16 +187,16 @@ void NetworkServer::broadcast(const ProtocolMessage & msg) {
 
 void NetworkServer::networkSend(const int fd, const std::string & msgString) {
     size_t size {msgString.size()};
-    ssize_t n {send(fd, msgString.data(), size, 0)};
+    ssize_t sent {send(fd, msgString.data(), size, 0)};
     
     // treat partial sends, and all error codes
     // as a client disconnect. Buffer + retry on
     // partial sends and EAGAIN is todo
-    if (0 <= n && static_cast<size_t>(n) < size) {
-        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd, size, n);
+    if (0 <= sent && static_cast<size_t>(sent) < size) {
+        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd, size, sent);
         fdsToDisconnect.insert(fd);
     }
-    else if (n == -1) {
+    else if (sent == -1) {
         spdlog::warn("Error receieved {} on send for fd={}, disconnecting the client", errno, fd);
         fdsToDisconnect.insert(fd);
     }
