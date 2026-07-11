@@ -22,6 +22,7 @@ public:
     int getServerFd() const { return serverFd; };
     void sendToServer(const ProtocolMessage &);
     std::vector<ProtocolMessage> receiveFromServer();
+    void waitForReadable(const int);
 
 private:
     void connectToServer(const std::string & host, int port);

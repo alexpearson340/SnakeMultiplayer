@@ -5,6 +5,7 @@
 #include <cstring>
 #include <fcntl.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <stdexcept>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -99,4 +100,9 @@ std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char * buffer, s
         messageBuffer.erase(0, pos + 1);
     }
     return messages;
+}
+
+void NetworkClient::waitForReadable(const int timeoutMs) {
+    pollfd pfd {serverFd, POLLIN, 0};
+    poll(&pfd, 1, timeoutMs);
 }

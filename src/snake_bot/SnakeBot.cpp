@@ -12,6 +12,7 @@ SnakeBot::SnakeBot(const int width, const int height)
 
 void SnakeBot::run() {
     while (true) {
+        network.waitForReadable(EPOLL_BLOCKING_TIMEOUT_MS);
         timer.tick();
         if (clientId == -1 && !awaitingJoin) {
             createBot();
