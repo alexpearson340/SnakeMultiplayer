@@ -38,22 +38,22 @@ void SnakeBot::joinGame() {
         username = "unknown";
     spdlog::info("Sending join game request as " + std::string(username, 3));
 
-    ProtocolMessage pm {MessageType::CLIENT_JOIN, username, clientId};
-    network.sendToServer(pm);
+    network.sendToServer({protocol::toString({MessageType::CLIENT_JOIN, username, clientId})});
     spdlog::info("Sent join game request for " + std::string(username, 3));
 }
 
 void SnakeBot::receiveUpdates() {
-    std::vector<ProtocolMessage> messages {network.receiveFromServer()};
-    ProtocolMessage * latestGameState {nullptr};
+    std::vector<Bytes> messages {network.receiveFromServer()};
+    std::optional<ProtocolMessage> latestGameState;
 
-    for (auto & msg : messages) {
+    for (auto & msgBytes : messages) {
+        ProtocolMessage msg {protocol::fromString(msgBytes)};
         switch (msg.messageType) {
         case MessageType::SERVER_WELCOME:
             handleServerWelcome(msg);
             break;
         case MessageType::GAME_STATE:
-            latestGameState = &msg;
+            latestGameState = std::move(msg);
             gameStateHasChanged = true;
             break;
         default:
@@ -64,8 +64,8 @@ void SnakeBot::receiveUpdates() {
     // We only process the latest GAME_STATE message, to avoid
     // getting behind on the client side when all we care about
     // is the latest GAME_STATE anyway
-    if (latestGameState != nullptr) {
-        handleGameStateMessage(*latestGameState);
+    if (latestGameState) {
+        handleGameStateMessage(latestGameState.value());
     }
 }
 
@@ -92,8 +92,7 @@ void SnakeBot::sendInput() {
     if (gameState.players.contains(clientId)) {
         // char input {calculateRandomMove()};
         const char input {calculatePathingMove()};
-        ProtocolMessage pm {MessageType::CLIENT_INPUT, std::string(1, input), clientId};
-        network.sendToServer(pm);
+        network.sendToServer({protocol::toString({MessageType::CLIENT_INPUT, std::string(1, input), clientId})});
     }
 }
 

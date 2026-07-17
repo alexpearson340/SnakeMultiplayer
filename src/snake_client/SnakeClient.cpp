@@ -39,8 +39,7 @@ void SnakeClient::joinGame() {
     const char * username = getenv("USER");
     if (!username)
         username = "unknown";
-    ProtocolMessage pm {MessageType::CLIENT_JOIN, username, clientId};
-    network.sendToServer(pm);
+    network.sendToServer({protocol::toString({MessageType::CLIENT_JOIN, username, clientId})});
 }
 
 void SnakeClient::handleInput() {
@@ -64,22 +63,22 @@ void SnakeClient::handleInput() {
 }
 
 void SnakeClient::sendPlayerInput() {
-    ProtocolMessage pm {MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId};
-    network.sendToServer(pm);
+    network.sendToServer({protocol::toString({MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId})});
     playerInput = '\0';
 }
 
 void SnakeClient::receiveUpdates() {
-    std::vector<ProtocolMessage> messages {network.receiveFromServer()};
-    ProtocolMessage * latestGameState {nullptr};
+    std::vector<Bytes> messages {network.receiveFromServer()};
+    std::optional<ProtocolMessage> latestGameState;
 
-    for (auto & msg : messages) {
+    for (auto & msgBytes : messages) {
+        ProtocolMessage msg {protocol::fromString(msgBytes)};
         switch (msg.messageType) {
         case MessageType::SERVER_WELCOME:
             handleServerWelcome(msg);
             break;
         case MessageType::GAME_STATE:
-            latestGameState = &msg;
+            latestGameState = std::move(msg);
             break;
         default:
             throw std::runtime_error("Invalid MessageType");
@@ -89,8 +88,8 @@ void SnakeClient::receiveUpdates() {
     // We only process the latest GAME_STATE message, to avoid
     // getting behind on the client side when all we care about
     // is the latest GAME_STATE anyway
-    if (latestGameState != nullptr) {
-        handleGameStateMessage(*latestGameState);
+    if (latestGameState) {
+        handleGameStateMessage(latestGameState.value());
     }
 }
 

@@ -58,8 +58,7 @@ void NetworkClient::setNonBlocking(int fd) {
     }
 }
 
-void NetworkClient::sendToServer(const ProtocolMessage & msg) {
-    std::string msgString {protocol::toString(msg)};
+void NetworkClient::sendToServer(const Bytes & msgString) {
     size_t size {msgString.size()};
 
     ssize_t sent = send(serverFd, msgString.data(), size, 0);
@@ -71,7 +70,7 @@ void NetworkClient::sendToServer(const ProtocolMessage & msg) {
     }
 }
 
-std::vector<ProtocolMessage> NetworkClient::receiveFromServer() {
+std::vector<Bytes> NetworkClient::receiveFromServer() {
     char buffer[4096];
     ssize_t bytesRead = recv(serverFd, buffer, sizeof(buffer) - 1, 0);
 
@@ -89,14 +88,12 @@ std::vector<ProtocolMessage> NetworkClient::receiveFromServer() {
     return parseReceivedPacket(buffer, static_cast<size_t>(bytesRead));
 }
 
-std::vector<ProtocolMessage> NetworkClient::parseReceivedPacket(char * buffer, size_t size) {
-    std::vector<ProtocolMessage> messages {};
+std::vector<Bytes> NetworkClient::parseReceivedPacket(char * buffer, size_t size) {
+    std::vector<Bytes> messages {};
     messageBuffer += std::string(buffer, size);
     size_t pos;
     while ((pos = messageBuffer.find('\n')) != std::string::npos) {
-        std::string msg {messageBuffer.substr(0, pos)};
-        ProtocolMessage pm {protocol::fromString(msg)};
-        messages.push_back(pm);
+        messages.emplace_back(messageBuffer.substr(0, pos));
         messageBuffer.erase(0, pos + 1);
     }
     return messages;

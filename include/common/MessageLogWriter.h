@@ -13,8 +13,8 @@ public:
         }
     }
 
-    void log(const ProtocolMessage & msg) {
-        out << protocol::toString(msg);
+    void log(const std::string & msg) {
+        out << msg;
     }
 
 private:

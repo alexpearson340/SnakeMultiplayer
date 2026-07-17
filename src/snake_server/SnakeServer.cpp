@@ -38,7 +38,8 @@ void SnakeServer::run() {
         bool stateChanged = false;
         for (auto & msg : messages.value()) {
             stampMessage(msg);
-            msgLogWriter.log(msg);
+            std::string msgBytes {protocol::toString(msg)};
+            msgLogWriter.log(msgBytes);
             switch (msg.messageType) {
             case MessageType::CLIENT_JOIN:
                 handleClientJoin(msg);
@@ -83,7 +84,8 @@ void SnakeServer::recordServerConfig() {
     sessionConfig["speed_boost_ratio"] = SPEED_BOOST_RATIO;
     ProtocolMessage pm {MessageType::SERVER_CONFIG, sessionConfig.dump()};
     stampMessage(pm);
-    msgLogWriter.log(pm);
+    std::string msgBytes {protocol::toString(pm)};
+    msgLogWriter.log(msgBytes);
 }
 
 void SnakeServer::stampMessage(ProtocolMessage & msg) {
@@ -133,9 +135,10 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
     ProtocolMessage pm {MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId};
     stampMessage(pm);
-    msgLogWriter.log(pm);
+    std::string msgBytes {protocol::toString(pm)};
+    msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
-        network.sendToClient(msg.clientId, protocol::toString(pm));
+        network.sendToClient(msg.clientId, msgBytes);
     }
     spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
     spdlog::info("Sent client welcome to " + msg.message);
@@ -368,9 +371,10 @@ void SnakeServer::placeSpeedBoost() {
 void SnakeServer::broadcastGameState() {
     ProtocolMessage pm {MessageType::GAME_STATE, buildGameStatePayload()};
     stampMessage(pm);
-    msgLogWriter.log(pm);
+    std::string msgBytes {protocol::toString(pm)};
+    msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
-        network.broadcast(protocol::toString(pm));
+        network.broadcast(msgBytes);
     }
 }
 

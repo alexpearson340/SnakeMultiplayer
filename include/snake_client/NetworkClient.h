@@ -20,14 +20,14 @@ public:
     ~NetworkClient();
 
     int getServerFd() const { return serverFd; };
-    void sendToServer(const ProtocolMessage &);
-    std::vector<ProtocolMessage> receiveFromServer();
+    void sendToServer(const Bytes &);
+    std::vector<Bytes> receiveFromServer();
     void waitForReadable(const int);
 
 private:
     void connectToServer(const std::string & host, int port);
     void setNonBlocking(int fd);
-    std::vector<ProtocolMessage> parseReceivedPacket(char * buffer, size_t size);
+    std::vector<Bytes> parseReceivedPacket(char * buffer, size_t size);
 
     int serverFd;
     std::string messageBuffer;
