@@ -20,6 +20,7 @@ public:
 private:
     void recordServerConfig();
     void stampMessage(ProtocolMessage &);
+    ProtocolMessage stamped(ProtocolMessage msg);
     bool isInReplay() const;
     std::optional<std::vector<ProtocolMessage>> pollMessages();
     void handleClientJoin(const ProtocolMessage &);
