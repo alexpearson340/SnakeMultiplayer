@@ -2,6 +2,7 @@ add_executable(
     unit_tests
     server_config_test.cpp
     replay_determinism_test.cpp
+    protocol_message_test.cpp
 )
 
 target_link_libraries(

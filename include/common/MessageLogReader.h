@@ -22,7 +22,7 @@ public:
             if (line.empty()) {
                 continue;
             }
-            return protocol::fromString(line);
+            return jsonprotocol::fromString(line);
         }
         return std::nullopt;
     }
@@ -41,20 +41,17 @@ public:
             if (line.empty()) {
                 continue;
             }
-            ProtocolMessage pm {protocol::fromString(line)};
+            ProtocolMessage pm {jsonprotocol::fromString(line)};
             if (currentTransactTime == 0) {
                 output.push_back(pm);
                 currentTransactTime = pm.transactTime;
-            }
-            else if (pm.transactTime == currentTransactTime) {
+            } else if (pm.transactTime == currentTransactTime) {
                 output.push_back(pm);
-            }
-            else if (pm.transactTime > currentTransactTime) {
+            } else if (pm.transactTime > currentTransactTime) {
                 outputBuffer.emplace(pm);
                 currentTransactTime = pm.transactTime;
                 break;
-            }
-            else {
+            } else {
                 throw std::logic_error("logic error in MessageLogReader::nextBatch loop");
             }
         }
