@@ -39,7 +39,7 @@ void SnakeClient::joinGame() {
     const char * username = getenv("USER");
     if (!username)
         username = "unknown";
-    network.sendToServer({protocol::toString({MessageType::CLIENT_JOIN, username, clientId})});
+    network.sendToServer({jsonprotocol::toString({MessageType::CLIENT_JOIN, username, clientId})});
 }
 
 void SnakeClient::handleInput() {
@@ -63,7 +63,7 @@ void SnakeClient::handleInput() {
 }
 
 void SnakeClient::sendPlayerInput() {
-    network.sendToServer({protocol::toString({MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId})});
+    network.sendToServer({jsonprotocol::toString({MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId})});
     playerInput = '\0';
 }
 
@@ -72,7 +72,7 @@ void SnakeClient::receiveUpdates() {
     std::optional<ProtocolMessage> latestGameState;
 
     for (auto & msgBytes : messages) {
-        ProtocolMessage msg {protocol::fromString(msgBytes)};
+        ProtocolMessage msg {jsonprotocol::fromString(msgBytes)};
         switch (msg.messageType) {
         case MessageType::SERVER_WELCOME:
             handleServerWelcome(msg);

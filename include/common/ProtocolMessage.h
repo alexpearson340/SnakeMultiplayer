@@ -22,7 +22,7 @@ struct ProtocolMessage {
     int64_t transactTime {-1};
 };
 
-namespace protocol {
+namespace jsonprotocol {
 
     inline std::string toString(const ProtocolMessage & msg) {
         json j {{"message_type", static_cast<int>(msg.messageType)},
@@ -45,4 +45,4 @@ namespace protocol {
         return pm;
     };
 
-}; // namespace protocol
+}; // namespace jsonprotocol

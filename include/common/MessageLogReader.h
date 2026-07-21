@@ -22,7 +22,7 @@ public:
             if (line.empty()) {
                 continue;
             }
-            return protocol::fromString(line);
+            return jsonprotocol::fromString(line);
         }
         return std::nullopt;
     }
@@ -41,7 +41,7 @@ public:
             if (line.empty()) {
                 continue;
             }
-            ProtocolMessage pm {protocol::fromString(line)};
+            ProtocolMessage pm {jsonprotocol::fromString(line)};
             if (currentTransactTime == 0) {
                 output.push_back(pm);
                 currentTransactTime = pm.transactTime;
