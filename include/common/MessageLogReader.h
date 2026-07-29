@@ -25,7 +25,7 @@ public:
             if (!in.read(msg.data(), len)) {
                 throw std::runtime_error("truncated record in message log");
             }
-            return jsonprotocol::fromString(msg);
+            return protocol::fromString(msg);
         }
         return std::nullopt;
     }
@@ -46,7 +46,7 @@ public:
             if (!in.read(msg.data(), len)) {
                 throw std::runtime_error("truncated record in message log");
             }
-            ProtocolMessage pm {jsonprotocol::fromString(msg)};
+            ProtocolMessage pm {protocol::fromString(msg)};
             if (currentTransactTime == 0) {
                 output.push_back(pm);
                 currentTransactTime = pm.transactTime;

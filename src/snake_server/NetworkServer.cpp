@@ -165,13 +165,19 @@ std::vector<Bytes> NetworkServer::receiveFromClient(int fd) {
     return parseReceivedPacket(fd, buffer, static_cast<size_t>(bytesRead));
 }
 
-std::vector<Bytes> NetworkServer::parseReceivedPacket(int fd, char * buffer, size_t size) {
+std::vector<Bytes> NetworkServer::parseReceivedPacket(int fd, char * inputBuffer, size_t size) {
     std::vector<Bytes> frames {};
-    fdToBufferMap[fd] += Bytes(buffer, size);
-    size_t pos;
-    while ((pos = fdToBufferMap.at(fd).find('\n')) != Bytes::npos) {
-        frames.push_back(fdToBufferMap.at(fd).substr(0, pos));
-        fdToBufferMap.at(fd).erase(0, pos + 1);
+    Bytes & fdBuffer {fdToBufferMap[fd]};
+    fdBuffer += Bytes(inputBuffer, size);
+
+    uint32_t len;
+    while (fdBuffer.size() >= sizeof(len)) {                 // enough bytes for a length prefix
+        memcpy(&len, fdBuffer.data(), sizeof(len));
+        if (fdBuffer.size() < sizeof(len) + len) {
+            break;                                          // full frame not here yet — wait
+        }
+        frames.push_back(fdBuffer.substr(sizeof(len), len));
+        fdBuffer.erase(0, sizeof(len) + len);
     }
     return frames;
 }
@@ -187,14 +193,18 @@ void NetworkServer::broadcast(const Bytes & bytes) {
 }
 
 void NetworkServer::networkSend(const int fd, const Bytes & bytes) {
-    size_t size {bytes.size()};
-    ssize_t sent {send(fd, bytes.data(), size, 0)};
-    
+    uint32_t len {static_cast<uint32_t>(bytes.size())};
+    Bytes frame {};
+    frame.reserve(sizeof(len) + bytes.size());
+    frame.append(reinterpret_cast<const char *>(&len), sizeof(len));
+    frame += bytes;
+    ssize_t sent {send(fd, frame.data(), frame.size(), 0)};
+
     // treat partial sends, and all error codes
     // as a client disconnect. Buffer + retry on
     // partial sends and EAGAIN is todo
-    if (0 <= sent && static_cast<size_t>(sent) < size) {
-        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd, size, sent);
+    if (0 <= sent && static_cast<size_t>(sent) < frame.size()) {
+        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd, frame.size(), sent);
         fdsToDisconnect.insert(fd);
     }
     else if (sent == -1) {

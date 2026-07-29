@@ -3,6 +3,7 @@
 benchmarks/
 build
 /*.jsonl
+/*.bin
 *.trace
 *.log
 compile_commands.json
