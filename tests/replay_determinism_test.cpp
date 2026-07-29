@@ -5,27 +5,34 @@
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 namespace {
 
-    std::vector<std::string> readLines(const std::filesystem::path & path) {
-        std::ifstream in {path};
-        std::vector<std::string> lines;
-        std::string line;
-        while (std::getline(in, line)) {
-            lines.push_back(line);
+    std::vector<std::string> readMessages(const std::filesystem::path & path) {
+        std::ifstream in {path, std::ios::binary};
+        std::vector<std::string> messages;
+
+        uint32_t len;
+        std::string msg;
+        while (in.read(reinterpret_cast<char *>(&len), sizeof(len))) {
+            msg.resize(len);
+            if (!in.read(msg.data(), len)) {
+                throw std::runtime_error("truncated record in " + path.string());
+            }
+            messages.push_back(msg);
         }
-        return lines;
+        return messages;
     }
 
 } // namespace
 
 // Replaying a recording should reproduce the recording byte-for-byte. The one
-// exception is line 1 (SERVER_CONFIG): its transact_time is wall clock
+// exception is record 1 (SERVER_CONFIG): its transact_time is wall clock
 TEST(ReplayDeterminism, ReproducesRecording) {
-    const std::filesystem::path fixture {std::filesystem::path {FIXTURE_DIR} / "test_replay.jsonl"};
+    const std::filesystem::path fixture {std::filesystem::path {FIXTURE_DIR} / "test_replay.bin"};
     const std::filesystem::path workDir {std::filesystem::temp_directory_path() / "snake_replay_determinism_test"};
 
     std::filesystem::remove_all(workDir);
@@ -35,13 +42,13 @@ TEST(ReplayDeterminism, ReproducesRecording) {
                            + SNAKE_SERVER_BIN + " > /dev/null 2>&1"};
     ASSERT_EQ(std::system(cmd.c_str()), 0) << "snake_server replay run failed";
 
-    const std::vector<std::string> expected {readLines(fixture)};
-    const std::vector<std::string> actual {readLines(workDir / "snake_server.jsonl")};
+    const std::vector<std::string> expected {readMessages(fixture)};
+    const std::vector<std::string> actual {readMessages(workDir / "snake_server.bin")};
 
-    ASSERT_EQ(actual.size(), expected.size()) << "output line count differs from the fixture";
+    ASSERT_EQ(actual.size(), expected.size()) << "output record count differs from the fixture";
 
     for (std::size_t i {1}; i < expected.size(); ++i) {
-        EXPECT_EQ(actual[i], expected[i]) << "divergence at line " << (i + 1);
+        EXPECT_EQ(actual[i], expected[i]) << "divergence at record " << (i + 1);
     }
 
     const ProtocolMessage actualLast {protocol::fromString(actual.back())};

@@ -10,19 +10,22 @@
 
 class MessageLogReader {
 public:
-    explicit MessageLogReader(const std::string & fileName) : in {fileName, std::ios::in}, currentTransactTime {0} {
+    explicit MessageLogReader(const std::string & fileName)
+        : in {fileName, std::ios::in | std::ios::binary}, currentTransactTime {0} {
         if (!in) {
             throw std::runtime_error("Failed to open log file " + fileName);
         }
     }
 
     std::optional<ProtocolMessage> first() {
-        std::string line;
-        while (std::getline(in, line)) {
-            if (line.empty()) {
-                continue;
+        uint32_t len;
+        std::string msg;
+        if (in.read(reinterpret_cast<char *>(&len), sizeof(len))) {
+            msg.resize(len);
+            if (!in.read(msg.data(), len)) {
+                throw std::runtime_error("truncated record in message log");
             }
-            return jsonprotocol::fromString(line);
+            return jsonprotocol::fromString(msg);
         }
         return std::nullopt;
     }
@@ -30,18 +33,20 @@ public:
     // return messages all of the same transactTime
     std::vector<ProtocolMessage> nextBatch() {
         std::vector<ProtocolMessage> output {};
-        std::string line;
         if (outputBuffer.has_value()) {
             output.push_back(std::move(outputBuffer.value()));
             outputBuffer.reset();
             currentTransactTime = output.front().transactTime;
         }
 
-        while (std::getline(in, line)) {
-            if (line.empty()) {
-                continue;
+        uint32_t len;
+        std::string msg;
+        while (in.read(reinterpret_cast<char *>(&len), sizeof(len))) {
+            msg.resize(len);
+            if (!in.read(msg.data(), len)) {
+                throw std::runtime_error("truncated record in message log");
             }
-            ProtocolMessage pm {jsonprotocol::fromString(line)};
+            ProtocolMessage pm {jsonprotocol::fromString(msg)};
             if (currentTransactTime == 0) {
                 output.push_back(pm);
                 currentTransactTime = pm.transactTime;
