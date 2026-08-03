@@ -58,12 +58,16 @@ void NetworkClient::setNonBlocking(int fd) {
     }
 }
 
-void NetworkClient::sendToServer(const Bytes & msgString) {
-    size_t size {msgString.size()};
-
-    ssize_t sent = send(serverFd, msgString.data(), size, 0);
-    if (0 <= sent && static_cast<size_t>(sent) < size) {
-        throw std::runtime_error(fmt::format("Partial send to server, tried to send {} bytes, actually sent {}, exiting", size, sent));
+void NetworkClient::sendToServer(const Bytes & bytes) {
+    uint32_t len {static_cast<uint32_t>(bytes.size())};
+    Bytes frame {};
+    frame.reserve(sizeof(len) + bytes.size());
+    frame.append(reinterpret_cast<const char *>(&len), sizeof(len));
+    frame += bytes;
+    ssize_t sent = send(serverFd, frame.data(), frame.size(), 0);
+    
+    if (0 <= sent && static_cast<size_t>(sent) < frame.size()) {
+        throw std::runtime_error(fmt::format("Partial send to server, tried to send {} bytes, actually sent {}, exiting", frame.size(), sent));
     }
     else if (sent == -1) {
         throw std::runtime_error(fmt::format("Error receieved {} on send to server, exiting", errno));
@@ -88,15 +92,20 @@ std::vector<Bytes> NetworkClient::receiveFromServer() {
     return parseReceivedPacket(buffer, static_cast<size_t>(bytesRead));
 }
 
-std::vector<Bytes> NetworkClient::parseReceivedPacket(char * buffer, size_t size) {
-    std::vector<Bytes> messages {};
-    messageBuffer += std::string(buffer, size);
-    size_t pos;
-    while ((pos = messageBuffer.find('\n')) != std::string::npos) {
-        messages.emplace_back(messageBuffer.substr(0, pos));
-        messageBuffer.erase(0, pos + 1);
+std::vector<Bytes> NetworkClient::parseReceivedPacket(char * inputBuffer, size_t size) {
+    std::vector<Bytes> frames {};
+    messageBuffer += Bytes(inputBuffer, size);
+
+    uint32_t len;
+    while (messageBuffer.size() > sizeof(len)) {                // enough bytes for a length prefix
+        memcpy(&len, messageBuffer.data(), sizeof(len));
+        if (messageBuffer.size() < sizeof(len) + len) {
+            break;                                              // full frame not here yet — wait
+        }
+        frames.push_back(messageBuffer.substr(sizeof(len), len));
+        messageBuffer.erase(0, sizeof(len) + len);
     }
-    return messages;
+    return frames;
 }
 
 void NetworkClient::waitForReadable(const int timeoutMs) {
