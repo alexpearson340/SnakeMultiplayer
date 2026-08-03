@@ -52,11 +52,12 @@ namespace jsonprotocol {
 }; // namespace jsonprotocol
 
 namespace protocol {
+    struct ServerConfig;
     struct ClientInput;
     struct ClientDisconnect;
     struct ServerWelcome;
     struct ClientJoin;
-    using MessageVariant = std::variant<ClientInput, ClientDisconnect, ServerWelcome, ClientJoin>;
+    using MessageVariant = std::variant<ServerConfig, ClientInput, ClientDisconnect, ServerWelcome, ClientJoin>;
 
     // ProtocolMessage shim toString and fromString - until we fully remove ProtocolMessage
     inline Bytes toString(const ProtocolMessage & msg);
@@ -78,7 +79,38 @@ namespace protocol {
     static_assert(sizeof(Header) == 24);
     constexpr size_t HEADER_PACKED_SIZE {sizeof(Header::messageType) + sizeof(Header::clientId) +
         sizeof(Header::sequence) + sizeof(Header::transactTime)};
-
+    
+    struct ServerConfig {
+        Header hdr;
+        int32_t width;
+        int32_t height;
+        uint32_t seed;
+        int32_t minFoodInArena;
+        int32_t foodSpawnFromBodySegmentProbability;
+        int32_t speedBoostProbability;
+        float speedBoostRatio;
+        int64_t movementFrequencyMs;
+        int64_t boostedMovementFrequencyMs;
+        int64_t boostDurationMs;
+    };
+    static_assert(alignof(Header) == 8);
+    static_assert(offsetof(ServerConfig, width) == 24);
+    static_assert(offsetof(ServerConfig, height) == 28);
+    static_assert(offsetof(ServerConfig, seed) == 32);
+    static_assert(offsetof(ServerConfig, minFoodInArena) == 36);
+    static_assert(offsetof(ServerConfig, foodSpawnFromBodySegmentProbability) == 40);
+    static_assert(offsetof(ServerConfig, speedBoostProbability) == 44);
+    static_assert(offsetof(ServerConfig, speedBoostRatio) == 48);
+    static_assert(offsetof(ServerConfig, movementFrequencyMs) == 56);
+    static_assert(offsetof(ServerConfig, boostedMovementFrequencyMs) == 64);
+    static_assert(offsetof(ServerConfig, boostDurationMs) == 72);
+    static_assert(sizeof(ServerConfig) == 80);
+    constexpr size_t SERVER_CONFIG_PACKED_SIZE {HEADER_PACKED_SIZE +
+        sizeof(ServerConfig::width) + sizeof(ServerConfig::height) + sizeof(ServerConfig::seed) +
+        sizeof(ServerConfig::minFoodInArena) + sizeof(ServerConfig::foodSpawnFromBodySegmentProbability) +
+        sizeof(ServerConfig::speedBoostProbability) + sizeof(ServerConfig::speedBoostRatio) +
+        sizeof(ServerConfig::movementFrequencyMs) + sizeof(ServerConfig::boostedMovementFrequencyMs) +
+        sizeof(ServerConfig::boostDurationMs)};
 
     struct ClientInput {
         Header hdr;
@@ -165,6 +197,21 @@ namespace protocol {
             writeRawBytes(msg.input, raw);
             return buf;
         }
+        else if constexpr (std::is_same_v<T, ServerConfig>) {
+            buf.resize(SERVER_CONFIG_PACKED_SIZE);
+            char * raw = buf.data() + HEADER_PACKED_SIZE;
+            writeRawBytes(msg.width, raw);
+            writeRawBytes(msg.height, raw);
+            writeRawBytes(msg.seed, raw);
+            writeRawBytes(msg.minFoodInArena, raw);
+            writeRawBytes(msg.foodSpawnFromBodySegmentProbability, raw);
+            writeRawBytes(msg.speedBoostProbability, raw);
+            writeRawBytes(msg.speedBoostRatio, raw);
+            writeRawBytes(msg.movementFrequencyMs, raw);
+            writeRawBytes(msg.boostedMovementFrequencyMs, raw);
+            writeRawBytes(msg.boostDurationMs, raw);
+            return buf;
+        }
         else {
             throw std::runtime_error("Invalid MessageType");
         }
@@ -200,6 +247,22 @@ namespace protocol {
             ClientInput msg;
             msg.hdr = hdr;
             readRawBytes(raw, msg.input);
+            return msg;
+        }
+        case MessageType::SERVER_CONFIG: {
+            assert(buf.size() == SERVER_CONFIG_PACKED_SIZE);
+            ServerConfig msg;
+            msg.hdr = hdr;
+            readRawBytes(raw, msg.width);
+            readRawBytes(raw, msg.height);
+            readRawBytes(raw, msg.seed);
+            readRawBytes(raw, msg.minFoodInArena);
+            readRawBytes(raw, msg.foodSpawnFromBodySegmentProbability);
+            readRawBytes(raw, msg.speedBoostProbability);
+            readRawBytes(raw, msg.speedBoostRatio);
+            readRawBytes(raw, msg.movementFrequencyMs);
+            readRawBytes(raw, msg.boostedMovementFrequencyMs);
+            readRawBytes(raw, msg.boostDurationMs);
             return msg;
         }
         default:

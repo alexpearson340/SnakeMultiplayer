@@ -63,6 +63,30 @@ TEST(ProtocolBinary, ServerWelcomeRoundTrip) {
     EXPECT_EQ(decoded.hdr.transactTime, original.hdr.transactTime);
 }
 
+TEST(ProtocolBinary, ServerConfigRoundTrip) {
+    const protocol::ServerConfig original {
+        {MessageType::SERVER_CONFIG, 7, 123456789, 987654321012345},
+        40, 40, 4246754215u, 6, 3, 80, 1.5f, 200, 133, 8000};
+
+    const protocol::ServerConfig decoded {
+        std::get<protocol::ServerConfig>(protocol::deserialise(protocol::serialise(original)))};
+
+    EXPECT_EQ(decoded.hdr.messageType, original.hdr.messageType);
+    EXPECT_EQ(decoded.hdr.clientId, original.hdr.clientId);
+    EXPECT_EQ(decoded.hdr.sequence, original.hdr.sequence);
+    EXPECT_EQ(decoded.hdr.transactTime, original.hdr.transactTime);
+    EXPECT_EQ(decoded.width, original.width);
+    EXPECT_EQ(decoded.height, original.height);
+    EXPECT_EQ(decoded.seed, original.seed);
+    EXPECT_EQ(decoded.minFoodInArena, original.minFoodInArena);
+    EXPECT_EQ(decoded.foodSpawnFromBodySegmentProbability, original.foodSpawnFromBodySegmentProbability);
+    EXPECT_EQ(decoded.speedBoostProbability, original.speedBoostProbability);
+    EXPECT_EQ(decoded.speedBoostRatio, original.speedBoostRatio);
+    EXPECT_EQ(decoded.movementFrequencyMs, original.movementFrequencyMs);
+    EXPECT_EQ(decoded.boostedMovementFrequencyMs, original.boostedMovementFrequencyMs);
+    EXPECT_EQ(decoded.boostDurationMs, original.boostDurationMs);
+}
+
 TEST(ProtocolShim, ServerConfigRoundTrip) {
     const ProtocolMessage original {MessageType::SERVER_CONFIG, "seed=42", 7, 123456789, 987654321012345};
 
