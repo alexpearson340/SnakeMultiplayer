@@ -34,7 +34,7 @@ namespace jsonprotocol {
                 {"client_id", msg.clientId},
                 {"sequence", msg.sequence},
                 {"transact_time", msg.transactTime}};
-        return j.dump() + '\n';
+        return j.dump();
     }
 
     inline ProtocolMessage fromString(const Bytes & str) {
