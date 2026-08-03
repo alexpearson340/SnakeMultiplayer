@@ -38,7 +38,7 @@ void SnakeServer::run() {
         bool stateChanged = false;
         for (auto & msg : messages.value()) {
             stampMessage(msg);
-            std::string msgBytes {jsonprotocol::toString(msg)};
+            std::string msgBytes {protocol::toString(msg)};
             msgLogWriter.log(msgBytes);
             switch (msg.messageType) {
             case MessageType::CLIENT_JOIN:
@@ -82,7 +82,7 @@ void SnakeServer::recordServerConfig() {
     sessionConfig["food_spawn_from_body_segment_probability"] = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
     sessionConfig["speed_boost_probability"] = SPEED_BOOST_PROBABILITY;
     sessionConfig["speed_boost_ratio"] = SPEED_BOOST_RATIO;
-    msgLogWriter.log(jsonprotocol::toString(stamped({MessageType::SERVER_CONFIG, sessionConfig.dump()})));
+    msgLogWriter.log(protocol::toString(stamped({MessageType::SERVER_CONFIG, sessionConfig.dump()})));
 }
 
 ProtocolMessage SnakeServer::stamped(ProtocolMessage msg) {
@@ -136,7 +136,7 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
     std::string msgBytes {
-        jsonprotocol::toString(stamped({MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId}))};
+        protocol::toString(stamped({MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId}))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
         network.sendToClient(msg.clientId, msgBytes);
@@ -370,7 +370,7 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    std::string msgBytes {jsonprotocol::toString(stamped({MessageType::GAME_STATE, buildGameStatePayload()}))};
+    std::string msgBytes {protocol::toString(stamped({MessageType::GAME_STATE, buildGameStatePayload()}))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
         network.broadcast(msgBytes);
