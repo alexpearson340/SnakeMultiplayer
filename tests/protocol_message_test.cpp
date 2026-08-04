@@ -87,6 +87,82 @@ TEST(ProtocolBinary, ServerConfigRoundTrip) {
     EXPECT_EQ(decoded.boostDurationMs, original.boostDurationMs);
 }
 
+namespace {
+
+    void expectFoodEq(const protocol::GameState::Food & a, const protocol::GameState::Food & b) {
+        EXPECT_EQ(a.colour, b.colour);
+        EXPECT_EQ(a.icon, b.icon);
+        EXPECT_EQ(a.x, b.x);
+        EXPECT_EQ(a.y, b.y);
+    }
+
+    void expectGameStateEq(const protocol::GameState & d, const protocol::GameState & o) {
+        EXPECT_EQ(d.hdr.messageType, o.hdr.messageType);
+        EXPECT_EQ(d.hdr.clientId, o.hdr.clientId);
+        EXPECT_EQ(d.hdr.sequence, o.hdr.sequence);
+        EXPECT_EQ(d.hdr.transactTime, o.hdr.transactTime);
+        EXPECT_EQ(d.highScore, o.highScore);
+        EXPECT_EQ(std::memcmp(d.highScoreUsername, o.highScoreUsername, sizeof(o.highScoreUsername)), 0);
+
+        ASSERT_EQ(d.food.size(), o.food.size());
+        for (size_t i {0}; i < o.food.size(); ++i) {
+            expectFoodEq(d.food[i], o.food[i]);
+        }
+
+        ASSERT_EQ(d.speedBoosts.size(), o.speedBoosts.size());
+        for (size_t i {0}; i < o.speedBoosts.size(); ++i) {
+            expectFoodEq(d.speedBoosts[i], o.speedBoosts[i]);
+        }
+
+        ASSERT_EQ(d.players.size(), o.players.size());
+        for (size_t i {0}; i < o.players.size(); ++i) {
+            const protocol::GameState::Player & dp {d.players[i]};
+            const protocol::GameState::Player & op {o.players[i]};
+            EXPECT_EQ(dp.clientId, op.clientId);
+            EXPECT_EQ(dp.colour, op.colour);
+            EXPECT_EQ(dp.direction, op.direction);
+            EXPECT_EQ(dp.score, op.score);
+            EXPECT_EQ(std::memcmp(dp.username, op.username, sizeof(op.username)), 0);
+            EXPECT_EQ(dp.segments, op.segments);
+        }
+    }
+
+    protocol::GameState gameStateRoundTrip(const protocol::GameState & original) {
+        return std::get<protocol::GameState>(protocol::deserialise(protocol::serialise(original)));
+    }
+
+} // namespace
+
+TEST(ProtocolBinary, GameStateAllEmpty) {
+    const protocol::GameState original {
+        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot", {}, {}, {}};
+    expectGameStateEq(gameStateRoundTrip(original), original);
+}
+
+TEST(ProtocolBinary, GameStateFoodOnly) {
+    const protocol::GameState original {
+        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot",
+        {{3, '@', 2, 18}, {1, '@', 24, 8}}, {}, {}};
+    expectGameStateEq(gameStateRoundTrip(original), original);
+}
+
+TEST(ProtocolBinary, GameStatePlayersNoFood) {
+    const protocol::GameState original {
+        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot", {}, {},
+        {{7, 3, '>', 5, "alice", {{26, 22}, {26, 23}}}}};
+    expectGameStateEq(gameStateRoundTrip(original), original);
+}
+
+TEST(ProtocolBinary, GameStateFullMixedSegments) {
+    const protocol::GameState original {
+        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot",
+        {{3, '@', 2, 18}},
+        {{5, '*', 10, 12}, {6, '*', 4, 4}},
+        {{7, 3, '>', 5, "alice", {{26, 22}, {26, 23}}},
+         {9, 4, '^', 0, "bob", {}}}};
+    expectGameStateEq(gameStateRoundTrip(original), original);
+}
+
 TEST(ProtocolShim, ServerConfigRoundTrip) {
     const ProtocolMessage original {MessageType::SERVER_CONFIG, "seed=42", 7, 123456789, 987654321012345};
 
