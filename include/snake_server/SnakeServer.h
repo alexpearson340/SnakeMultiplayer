@@ -19,8 +19,6 @@ public:
 
 private:
     void recordServerConfig();
-    void stampMessage(ProtocolMessage &);
-    ProtocolMessage stamped(ProtocolMessage msg);
     bool isInReplay() const;
     std::optional<std::vector<ProtocolMessage>> pollMessages();
     void handleClientJoin(const ProtocolMessage &);
@@ -41,6 +39,25 @@ private:
     void broadcastGameState();
     std::string buildGameStatePayload();
     void logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> &, const int64_t &);
+
+    template <typename T>
+    T stamped(T msg) {
+        stampMessage(msg);
+        return msg;
+    }
+    
+    template <typename T>
+    void stampMessage(T & msg) {
+        // TODO ProtocolMessage removal
+        if constexpr (std::is_same_v<T, ProtocolMessage>) {
+            msg.sequence = currentSequence++;
+            msg.transactTime = timer.currentTickAsNanos();
+        }
+        else {
+            msg.hdr.sequence = currentSequence++;
+            msg.hdr.transactTime = timer.currentTickAsNanos();
+        }
+    }
 
     int width;
     int height;
