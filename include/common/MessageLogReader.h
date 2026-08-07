@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common/ProtocolMessage.h"
+#include "common/Protocol.h"
 
 #include <cassert>
 #include <fstream>

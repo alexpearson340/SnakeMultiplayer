@@ -1,32 +1,25 @@
 #pragma once
 
-#include "common/Json.h"
 #include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <string>
+#include <vector>
 #include <type_traits>
 
 using Bytes = std::string;
 
-enum class MessageType : int32_t {
-    SERVER_CONFIG = 0,     // contains parameters such as the random seed used
-    CLIENT_JOIN = 1,       // client to server, introduces the client
-    CLIENT_DISCONNECT = 2, // end of contact between client and server
-    SERVER_WELCOME = 3,    // server acknowledgement of client join
-    CLIENT_INPUT = 4,      // client input of actions to server
-    GAME_STATE = 5         // server broadcast of game state out to clients
-};
-
-struct ProtocolMessage {
-    MessageType messageType;
-    Bytes message;
-    int clientId {-1};
-    int64_t sequence {-1};
-    int64_t transactTime {-1};
-};
-
 namespace protocol {
+    
+    enum class MessageType : int32_t {
+        SERVER_CONFIG = 0,     // contains parameters such as the random seed used
+        CLIENT_JOIN = 1,       // client to server, introduces the client
+        CLIENT_DISCONNECT = 2, // end of contact between client and server
+        SERVER_WELCOME = 3,    // server acknowledgement of client join
+        CLIENT_INPUT = 4,      // client input of actions to server
+        GAME_STATE = 5         // server broadcast of game state out to clients
+    };
+
     struct ServerConfig;
     struct ClientInput;
     struct ClientDisconnect;
@@ -35,13 +28,6 @@ namespace protocol {
     struct GameState;
     using MessageVariant =
         std::variant<ServerConfig, ClientInput, ClientDisconnect, ServerWelcome, ClientJoin, GameState>;
-
-    // ProtocolMessage shim toString and fromString - until we fully remove ProtocolMessage
-    inline Bytes toString(const ProtocolMessage & msg);
-
-    inline ProtocolMessage fromString(const Bytes & str);
-
-    inline ProtocolMessage fromString(const Bytes & str, int clientId);
 
     struct Header {
         MessageType messageType;
@@ -404,86 +390,4 @@ namespace protocol {
         header(msg).clientId = clientId;
         return msg;
     }
-
-    // Send-side shim: ProtocolMessage -> typed struct -> binary bytes. Types not yet
-    // migrated (SERVER_CONFIG, GAME_STATE) fall back to the json encoding.
-    inline Bytes toString(const ProtocolMessage & msg) {
-        Header hdr {msg.messageType, msg.clientId, msg.sequence, msg.transactTime};
-        switch (msg.messageType) {
-        case MessageType::CLIENT_JOIN: {
-            ClientJoin out {};
-            out.hdr = hdr;
-            std::strncpy(out.username, msg.message.c_str(), sizeof(out.username));
-            return serialise(out);
-        }
-        case MessageType::CLIENT_INPUT: {
-            ClientInput out;
-            out.hdr = hdr;
-            out.input = msg.message[0];
-            return serialise(out);
-        }
-        default:
-            throw std::runtime_error("Invalid MessageType");
-        }
-    }
-
-    // Receive-side shim: binary/json frame -> ProtocolMessage. json frames start with '{';
-    // binary frames start with a little-endian messageType int32 (byte 0 in 0x00..0x05),
-    // so peek byte 0 to demux while encodings are mixed.
-    inline ProtocolMessage fromString(const Bytes & str) {
-        Header hdr {deserialiseHeader(str)};
-        switch (hdr.messageType) {
-        case MessageType::SERVER_WELCOME:
-            return {hdr.messageType, "", hdr.clientId, hdr.sequence, hdr.transactTime};
-        case MessageType::GAME_STATE: {
-            const GameState m {std::get<GameState>(deserialise(str))};
-            json j;
-            j["server_high_score"] = {
-                std::string(m.highScoreUsername, strnlen(m.highScoreUsername, sizeof(m.highScoreUsername))),
-                m.highScore};
-            j["players"] = json::array();
-            for (const GameState::Player & p : m.players) {
-                json pj;
-                pj["client_id"] = p.clientId;
-                pj["direction"] = std::string(1, p.direction);
-                pj["name"] = std::string(p.username, strnlen(p.username, sizeof(p.username)));
-                pj["score"] = p.score;
-                pj["color"] = p.color;
-                pj["segments"] = json::array();
-                for (const std::pair<int32_t, int32_t> & seg : p.segments) {
-                    pj["segments"].push_back({seg.first, seg.second});
-                }
-                j["players"].push_back(pj);
-            }
-            j["food"] = json::array();
-            for (const GameState::Food & f : m.food) {
-                json fj;
-                fj["x"] = f.x;
-                fj["y"] = f.y;
-                fj["icon"] = std::string(1, f.icon);
-                fj["color"] = f.color;
-                j["food"].push_back(fj);
-            }
-            j["speed_boosts"] = json::array();
-            for (const GameState::Food & sb : m.speedBoosts) {
-                json sbj;
-                sbj["x"] = sb.x;
-                sbj["y"] = sb.y;
-                sbj["icon"] = std::string(1, sb.icon);
-                sbj["color"] = sb.color;
-                j["speed_boosts"].push_back(sbj);
-            }
-            return {hdr.messageType, j.dump(), hdr.clientId, hdr.sequence, hdr.transactTime};
-        }
-        default:
-            throw std::runtime_error("Invalid MessageType");
-        }
-    }
-
-    inline ProtocolMessage fromString(const Bytes & str, int clientId) {
-        ProtocolMessage pm {fromString(str)};
-        pm.clientId = clientId;
-        return pm;
-    }
-
 }; // namespace protocol

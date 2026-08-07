@@ -1,5 +1,5 @@
 #include "common/Constants.h"
-#include "common/ProtocolMessage.h"
+#include "common/Protocol.h"
 #include "snake_server/ServerConfig.h"
 
 #include <gtest/gtest.h>
@@ -7,7 +7,7 @@
 
 TEST(InitServerConfig, UsesSeedFromHeader) {
     protocol::ServerConfig sc {};
-    sc.hdr.messageType = MessageType::SERVER_CONFIG;
+    sc.hdr.messageType = protocol::MessageType::SERVER_CONFIG;
     sc.seed = 42u;
     ServerConfig cfg {initServerConfig("test", protocol::MessageVariant {sc})};
     EXPECT_EQ(cfg.seed, 42u);

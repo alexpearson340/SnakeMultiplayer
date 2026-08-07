@@ -40,19 +40,19 @@ void SnakeServer::run() {
             std::string msgBytes {protocol::serialise(msg)};
             msgLogWriter.log(msgBytes);
             switch (protocol::header(msg).messageType) {
-            case MessageType::CLIENT_JOIN:
+            case protocol::MessageType::CLIENT_JOIN:
                 handleClientJoin(std::get<protocol::ClientJoin>(msg));
                 stateChanged = true;
                 break;
-            case MessageType::CLIENT_INPUT:
+            case protocol::MessageType::CLIENT_INPUT:
                 handleClientInput(std::get<protocol::ClientInput>(msg));
                 break;
-            case MessageType::CLIENT_DISCONNECT:
+            case protocol::MessageType::CLIENT_DISCONNECT:
                 handleClientDisconnect(std::get<protocol::ClientDisconnect>(msg));
                 stateChanged = true;
                 break;
             default:
-                throw std::runtime_error("Invalid MessageType");
+                throw std::runtime_error("Invalid protocol::MessageType");
             }
         }
 
@@ -71,7 +71,7 @@ void SnakeServer::run() {
 
 void SnakeServer::recordServerConfig() {
     protocol::ServerConfig serverConfig;
-    serverConfig.hdr.messageType = MessageType::SERVER_CONFIG;
+    serverConfig.hdr.messageType = protocol::MessageType::SERVER_CONFIG;
     serverConfig.width = width;
     serverConfig.height = height;
     serverConfig.seed = seed;
@@ -97,7 +97,8 @@ std::optional<std::vector<protocol::MessageVariant>> SnakeServer::pollMessages()
             for (auto & pm : fileMessages) {
                 protocol::Header & hdr {protocol::header(pm)};
                 timer.setTick(hdr.transactTime);
-                if (hdr.messageType != MessageType::SERVER_WELCOME && hdr.messageType != MessageType::GAME_STATE) {
+                if (hdr.messageType != protocol::MessageType::SERVER_WELCOME &&
+                    hdr.messageType != protocol::MessageType::GAME_STATE) {
                     messages.push_back(pm);
                 }
             }
@@ -116,7 +117,7 @@ std::optional<std::vector<protocol::MessageVariant>> SnakeServer::pollMessages()
 
     // check for client disconnects and sythesise the messages we need
     for (int clientId : network.drainDisconnects()) {
-        messages.push_back(protocol::ClientDisconnect{{MessageType::CLIENT_DISCONNECT, clientId}});
+        messages.push_back(protocol::ClientDisconnect {{protocol::MessageType::CLIENT_DISCONNECT, clientId}});
     }
     return messages;
 }
@@ -127,7 +128,8 @@ void SnakeServer::handleClientJoin(const protocol::ClientJoin & msg) {
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    std::string msgBytes {protocol::serialise(stamped(protocol::ServerWelcome{{MessageType::SERVER_WELCOME, msg.hdr.clientId}}))};
+    std::string msgBytes {protocol::serialise(
+        stamped(protocol::ServerWelcome {{protocol::MessageType::SERVER_WELCOME, msg.hdr.clientId}}))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
         network.sendToClient(msg.hdr.clientId, msgBytes);
@@ -372,7 +374,7 @@ void SnakeServer::broadcastGameState() {
 
 protocol::GameState SnakeServer::buildGameState() {
     protocol::GameState gameState;
-    gameState.hdr.messageType = MessageType::GAME_STATE;
+    gameState.hdr.messageType = protocol::MessageType::GAME_STATE;
     gameState.highScore = serverHighScore.second;
     // TODO
     std::strncpy(gameState.highScoreUsername, serverHighScore.first.c_str(), sizeof(gameState.highScoreUsername));

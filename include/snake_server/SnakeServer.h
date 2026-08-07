@@ -48,12 +48,7 @@ private:
     
     template <typename T>
     void stampMessage(T & msg) {
-        // TODO ProtocolMessage removal
-        if constexpr (std::is_same_v<T, ProtocolMessage>) {
-            msg.sequence = currentSequence++;
-            msg.transactTime = timer.currentTickAsNanos();
-        }
-        else if constexpr (std::is_same_v<T, protocol::MessageVariant>) {
+        if constexpr (std::is_same_v<T, protocol::MessageVariant>) {
             protocol::Header & hdr {protocol::header(msg)};
             hdr.sequence = currentSequence++;
             hdr.transactTime = timer.currentTickAsNanos();

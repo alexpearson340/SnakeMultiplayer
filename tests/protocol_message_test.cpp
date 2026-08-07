@@ -1,9 +1,9 @@
-#include "common/ProtocolMessage.h"
+#include "common/Protocol.h"
 
 #include <gtest/gtest.h>
 
 TEST(ProtocolBinary, HeaderRoundTrip) {
-    const protocol::Header original {MessageType::CLIENT_INPUT, 7, 123456789, 987654321012345};
+    const protocol::Header original {protocol::MessageType::CLIENT_INPUT, 7, 123456789, 987654321012345};
 
     const protocol::Header decoded {protocol::deserialiseHeader(protocol::serialiseHeader(original))};
 
@@ -14,7 +14,7 @@ TEST(ProtocolBinary, HeaderRoundTrip) {
 }
 
 TEST(ProtocolBinary, ClientInputRoundTrip) {
-    const protocol::ClientInput original {{MessageType::CLIENT_INPUT, 7, 123456789, 987654321012345}, 'w'};
+    const protocol::ClientInput original {{protocol::MessageType::CLIENT_INPUT, 7, 123456789, 987654321012345}, 'w'};
 
     const protocol::ClientInput decoded {
         std::get<protocol::ClientInput>(protocol::deserialise(protocol::serialise(original)))};
@@ -27,7 +27,8 @@ TEST(ProtocolBinary, ClientInputRoundTrip) {
 }
 
 TEST(ProtocolBinary, ClientJoinRoundTrip) {
-    const protocol::ClientJoin original {{MessageType::CLIENT_JOIN, 7, 123456789, 987654321012345}, "alexpearson"};
+    const protocol::ClientJoin original {{protocol::MessageType::CLIENT_JOIN, 7, 123456789, 987654321012345},
+                                         "alexpearson"};
 
     const protocol::ClientJoin decoded {
         std::get<protocol::ClientJoin>(protocol::deserialise(protocol::serialise(original)))};
@@ -40,7 +41,8 @@ TEST(ProtocolBinary, ClientJoinRoundTrip) {
 }
 
 TEST(ProtocolBinary, ClientDisconnectRoundTrip) {
-    const protocol::ClientDisconnect original {{MessageType::CLIENT_DISCONNECT, 7, 123456789, 987654321012345}};
+    const protocol::ClientDisconnect original {
+        {protocol::MessageType::CLIENT_DISCONNECT, 7, 123456789, 987654321012345}};
 
     const protocol::ClientDisconnect decoded {
         std::get<protocol::ClientDisconnect>(protocol::deserialise(protocol::serialise(original)))};
@@ -52,7 +54,7 @@ TEST(ProtocolBinary, ClientDisconnectRoundTrip) {
 }
 
 TEST(ProtocolBinary, ServerWelcomeRoundTrip) {
-    const protocol::ServerWelcome original {{MessageType::SERVER_WELCOME, 7, 123456789, 987654321012345}};
+    const protocol::ServerWelcome original {{protocol::MessageType::SERVER_WELCOME, 7, 123456789, 987654321012345}};
 
     const protocol::ServerWelcome decoded {
         std::get<protocol::ServerWelcome>(protocol::deserialise(protocol::serialise(original)))};
@@ -64,7 +66,7 @@ TEST(ProtocolBinary, ServerWelcomeRoundTrip) {
 }
 
 TEST(ProtocolBinary, ServerConfigRoundTrip) {
-    const protocol::ServerConfig original {{MessageType::SERVER_CONFIG, 7, 123456789, 987654321012345},
+    const protocol::ServerConfig original {{protocol::MessageType::SERVER_CONFIG, 7, 123456789, 987654321012345},
                                            40,
                                            40,
                                            4246754215u,
@@ -143,12 +145,12 @@ namespace {
 
 TEST(ProtocolBinary, GameStateAllEmpty) {
     const protocol::GameState original {
-        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot", {}, {}, {}};
+        {protocol::MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot", {}, {}, {}};
     expectGameStateEq(gameStateRoundTrip(original), original);
 }
 
 TEST(ProtocolBinary, GameStateFoodOnly) {
-    const protocol::GameState original {{MessageType::GAME_STATE, -1, 123456789, 987654321012345},
+    const protocol::GameState original {{protocol::MessageType::GAME_STATE, -1, 123456789, 987654321012345},
                                         8,
                                         "bot",
                                         {{3, '@', 2, 18}, {1, '@', 24, 8}},
@@ -158,7 +160,7 @@ TEST(ProtocolBinary, GameStateFoodOnly) {
 }
 
 TEST(ProtocolBinary, GameStatePlayersNoFood) {
-    const protocol::GameState original {{MessageType::GAME_STATE, -1, 123456789, 987654321012345},
+    const protocol::GameState original {{protocol::MessageType::GAME_STATE, -1, 123456789, 987654321012345},
                                         8,
                                         "bot",
                                         {},
@@ -168,7 +170,7 @@ TEST(ProtocolBinary, GameStatePlayersNoFood) {
 }
 
 TEST(ProtocolBinary, GameStateFullMixedSegments) {
-    const protocol::GameState original {{MessageType::GAME_STATE, -1, 123456789, 987654321012345},
+    const protocol::GameState original {{protocol::MessageType::GAME_STATE, -1, 123456789, 987654321012345},
                                         8,
                                         "bot",
                                         {{3, '@', 2, 18}},

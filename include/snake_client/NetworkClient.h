@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common/Constants.h"
-#include "common/ProtocolMessage.h"
+#include "common/Protocol.h"
 #include <string>
 
 inline const char * getServerIp() {

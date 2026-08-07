@@ -8,7 +8,7 @@
 #include <string>
 
 #include "common/Constants.h"
-#include "common/ProtocolMessage.h"
+#include "common/Protocol.h"
 
 struct ServerConfig {
     const std::string applicationName;
@@ -25,7 +25,7 @@ inline ServerConfig initServerConfig(const std::string & applicationName,
                                      const std::optional<protocol::MessageVariant> & msg) {
     std::uint32_t seed {std::random_device {}()};
     if (msg.has_value()) {
-        assert(protocol::header(*msg).messageType == MessageType::SERVER_CONFIG &&
+        assert(protocol::header(*msg).messageType == protocol::MessageType::SERVER_CONFIG &&
                "initServerConfig message must be type SERVER_CONFIG");
         seed = std::get<protocol::ServerConfig>(*msg).seed;
     }

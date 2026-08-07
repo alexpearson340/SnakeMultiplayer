@@ -17,8 +17,8 @@ private:
     void handleInput();
     void sendPlayerInput();
     void receiveUpdates();
-    void handleServerWelcome(const ProtocolMessage &);
-    void handleGameStateMessage(const ProtocolMessage &);
+    void handleServerWelcome(const protocol::ServerWelcome &);
+    void handleGameStateMessage(const protocol::GameState &);
     void render();
     void renderArena();
     void renderPlayers();
