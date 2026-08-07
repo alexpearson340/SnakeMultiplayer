@@ -37,7 +37,7 @@ private:
     void placeFood(const int, const int, const Color color = Color::WHITE);
     void placeSpeedBoost();
     void broadcastGameState();
-    std::string buildGameStatePayload();
+    protocol::GameState buildGameState();
     void logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> &, const int64_t &);
 
     template <typename T>

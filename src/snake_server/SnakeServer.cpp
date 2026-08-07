@@ -82,7 +82,7 @@ void SnakeServer::recordServerConfig() {
     sessionConfig["food_spawn_from_body_segment_probability"] = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
     sessionConfig["speed_boost_probability"] = SPEED_BOOST_PROBABILITY;
     sessionConfig["speed_boost_ratio"] = SPEED_BOOST_RATIO;
-    msgLogWriter.log(protocol::toString(stamped(ProtocolMessage{MessageType::SERVER_CONFIG, sessionConfig.dump()})));
+    msgLogWriter.log(protocol::toString(stamped(ProtocolMessage {MessageType::SERVER_CONFIG, sessionConfig.dump()})));
 }
 
 bool SnakeServer::isInReplay() const {
@@ -125,8 +125,8 @@ void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    std::string msgBytes {
-        protocol::toString(stamped(ProtocolMessage{MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId}))};
+    std::string msgBytes {protocol::toString(
+        stamped(ProtocolMessage {MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId}))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
         network.sendToClient(msg.clientId, msgBytes);
@@ -360,60 +360,47 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    std::string msgBytes {protocol::toString(stamped(ProtocolMessage{MessageType::GAME_STATE, buildGameStatePayload()}))};
+    std::string msgBytes {protocol::serialise(stamped(buildGameState()))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
         network.broadcast(msgBytes);
     }
 }
 
-std::string SnakeServer::buildGameStatePayload() {
-    json gameState;
-    gameState["server_high_score"] = {serverHighScore.first, serverHighScore.second};
-
-    // players
-    gameState["players"] = json::array();
-    for (auto & [clientId, player] : clientIdToPlayerMap) {
-        json playerJson;
-        playerJson["client_id"] = clientId;
-        playerJson["direction"] = std::string(1, player.direction);
-        playerJson["name"] = player.name;
-        playerJson["score"] = player.score;
-        playerJson["color"] = player.color;
-        playerJson["segments"] = json::array();
-
-        // get the x and y coordinates of every body segment
-        std::vector<std::pair<int, int>> segments {};
-        player.head.getSegments(segments);
-        for (auto segment : segments) {
-            playerJson["segments"].push_back({segment.first, segment.second});
-        }
-        gameState["players"].push_back(playerJson);
-    }
+protocol::GameState SnakeServer::buildGameState() {
+    protocol::GameState gameState;
+    gameState.hdr.messageType = MessageType::GAME_STATE;
+    gameState.highScore = serverHighScore.second;
+    // TODO
+    std::strncpy(gameState.highScoreUsername, serverHighScore.first.c_str(), sizeof(gameState.highScoreUsername));
 
     // food
-    gameState["food"] = json::array();
-    for (auto & [coords, food] : foodMap) {
-        json foodJson;
-        foodJson["x"] = food.x;
-        foodJson["y"] = food.y;
-        foodJson["icon"] = std::string(1, food.icon);
-        foodJson["color"] = food.color;
-        gameState["food"].push_back(foodJson);
+    gameState.food.reserve(foodMap.size());
+    for (auto & [_, f] : foodMap) {
+        gameState.food.emplace_back(static_cast<int32_t>(f.color), f.icon, f.x, f.y);
     }
 
-    // speed boost
-    gameState["speed_boosts"] = json::array();
-    for (auto & [coords, speedBoost] : speedBoostMap) {
-        json speedBoostJson;
-        speedBoostJson["x"] = speedBoost.x;
-        speedBoostJson["y"] = speedBoost.y;
-        speedBoostJson["icon"] = std::string(1, speedBoost.icon);
-        speedBoostJson["color"] = speedBoost.color;
-        gameState["speed_boosts"].push_back(speedBoostJson);
+    // speed boosts
+    gameState.speedBoosts.reserve(speedBoostMap.size());
+    for (auto & [_, sb] : speedBoostMap) {
+        gameState.speedBoosts.emplace_back(static_cast<int32_t>(sb.color), sb.icon, sb.x, sb.y);
     }
 
-    return gameState.dump();
+    // players
+    gameState.players.reserve(clientIdToPlayerMap.size());
+    for (auto & [clientId, p] : clientIdToPlayerMap) {
+        protocol::GameState::Player player;
+        player.clientId = clientId;
+        player.color = static_cast<int32_t>(p.color);
+        player.direction = p.direction;
+        player.score = p.score;
+        // TODO
+        std::strncpy(player.username, p.name.c_str(), sizeof(player.username));
+        p.head.getSegments(player.segments);
+        gameState.players.push_back(std::move(player));
+    }
+
+    return gameState;
 }
 
 void SnakeServer::logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> & start,

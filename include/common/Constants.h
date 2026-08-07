@@ -29,7 +29,7 @@ namespace SnakeConstants {
     inline const std::string PLAYER_KEY_RIGHT = ">";
 } // namespace SnakeConstants
 
-enum class Color {
+enum class Color : int32_t {
     WHITE = 1,
     YELLOW = 2,
     RED = 3,

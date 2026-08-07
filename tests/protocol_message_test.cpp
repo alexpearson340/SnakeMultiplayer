@@ -64,9 +64,17 @@ TEST(ProtocolBinary, ServerWelcomeRoundTrip) {
 }
 
 TEST(ProtocolBinary, ServerConfigRoundTrip) {
-    const protocol::ServerConfig original {
-        {MessageType::SERVER_CONFIG, 7, 123456789, 987654321012345},
-        40, 40, 4246754215u, 6, 3, 80, 1.5f, 200, 133, 8000};
+    const protocol::ServerConfig original {{MessageType::SERVER_CONFIG, 7, 123456789, 987654321012345},
+                                           40,
+                                           40,
+                                           4246754215u,
+                                           6,
+                                           3,
+                                           80,
+                                           1.5f,
+                                           200,
+                                           133,
+                                           8000};
 
     const protocol::ServerConfig decoded {
         std::get<protocol::ServerConfig>(protocol::deserialise(protocol::serialise(original)))};
@@ -90,7 +98,7 @@ TEST(ProtocolBinary, ServerConfigRoundTrip) {
 namespace {
 
     void expectFoodEq(const protocol::GameState::Food & a, const protocol::GameState::Food & b) {
-        EXPECT_EQ(a.colour, b.colour);
+        EXPECT_EQ(a.color, b.color);
         EXPECT_EQ(a.icon, b.icon);
         EXPECT_EQ(a.x, b.x);
         EXPECT_EQ(a.y, b.y);
@@ -119,7 +127,7 @@ namespace {
             const protocol::GameState::Player & dp {d.players[i]};
             const protocol::GameState::Player & op {o.players[i]};
             EXPECT_EQ(dp.clientId, op.clientId);
-            EXPECT_EQ(dp.colour, op.colour);
+            EXPECT_EQ(dp.color, op.color);
             EXPECT_EQ(dp.direction, op.direction);
             EXPECT_EQ(dp.score, op.score);
             EXPECT_EQ(std::memcmp(dp.username, op.username, sizeof(op.username)), 0);
@@ -140,26 +148,32 @@ TEST(ProtocolBinary, GameStateAllEmpty) {
 }
 
 TEST(ProtocolBinary, GameStateFoodOnly) {
-    const protocol::GameState original {
-        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot",
-        {{3, '@', 2, 18}, {1, '@', 24, 8}}, {}, {}};
+    const protocol::GameState original {{MessageType::GAME_STATE, -1, 123456789, 987654321012345},
+                                        8,
+                                        "bot",
+                                        {{3, '@', 2, 18}, {1, '@', 24, 8}},
+                                        {},
+                                        {}};
     expectGameStateEq(gameStateRoundTrip(original), original);
 }
 
 TEST(ProtocolBinary, GameStatePlayersNoFood) {
-    const protocol::GameState original {
-        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot", {}, {},
-        {{7, 3, '>', 5, "alice", {{26, 22}, {26, 23}}}}};
+    const protocol::GameState original {{MessageType::GAME_STATE, -1, 123456789, 987654321012345},
+                                        8,
+                                        "bot",
+                                        {},
+                                        {},
+                                        {{7, 3, '>', 5, "alice", {{26, 22}, {26, 23}}}}};
     expectGameStateEq(gameStateRoundTrip(original), original);
 }
 
 TEST(ProtocolBinary, GameStateFullMixedSegments) {
-    const protocol::GameState original {
-        {MessageType::GAME_STATE, -1, 123456789, 987654321012345}, 8, "bot",
-        {{3, '@', 2, 18}},
-        {{5, '*', 10, 12}, {6, '*', 4, 4}},
-        {{7, 3, '>', 5, "alice", {{26, 22}, {26, 23}}},
-         {9, 4, '^', 0, "bob", {}}}};
+    const protocol::GameState original {{MessageType::GAME_STATE, -1, 123456789, 987654321012345},
+                                        8,
+                                        "bot",
+                                        {{3, '@', 2, 18}},
+                                        {{5, '*', 10, 12}, {6, '*', 4, 4}},
+                                        {{7, 3, '>', 5, "alice", {{26, 22}, {26, 23}}}, {9, 4, '^', 0, "bob", {}}}};
     expectGameStateEq(gameStateRoundTrip(original), original);
 }
 
@@ -210,4 +224,3 @@ TEST(ProtocolShim, ClientInputRoundTrip) {
     EXPECT_EQ(decoded.sequence, original.sequence);
     EXPECT_EQ(decoded.transactTime, original.transactTime);
 }
-

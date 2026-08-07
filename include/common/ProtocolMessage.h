@@ -33,7 +33,8 @@ namespace protocol {
     struct ServerWelcome;
     struct ClientJoin;
     struct GameState;
-    using MessageVariant = std::variant<ServerConfig, ClientInput, ClientDisconnect, ServerWelcome, ClientJoin, GameState>;
+    using MessageVariant =
+        std::variant<ServerConfig, ClientInput, ClientDisconnect, ServerWelcome, ClientJoin, GameState>;
 
     // ProtocolMessage shim toString and fromString - until we fully remove ProtocolMessage
     inline Bytes toString(const ProtocolMessage & msg);
@@ -54,8 +55,8 @@ namespace protocol {
     static_assert(offsetof(Header, transactTime) == 16);
     static_assert(sizeof(Header) == 24);
     constexpr size_t HEADER_PACKED_SIZE {sizeof(Header::messageType) + sizeof(Header::clientId) +
-        sizeof(Header::sequence) + sizeof(Header::transactTime)};
-    
+                                         sizeof(Header::sequence) + sizeof(Header::transactTime)};
+
     struct ServerConfig {
         Header hdr;
         int32_t width;
@@ -81,8 +82,8 @@ namespace protocol {
     static_assert(offsetof(ServerConfig, boostedMovementFrequencyMs) == 64);
     static_assert(offsetof(ServerConfig, boostDurationMs) == 72);
     static_assert(sizeof(ServerConfig) == 80);
-    constexpr size_t SERVER_CONFIG_PACKED_SIZE {HEADER_PACKED_SIZE +
-        sizeof(ServerConfig::width) + sizeof(ServerConfig::height) + sizeof(ServerConfig::seed) +
+    constexpr size_t SERVER_CONFIG_PACKED_SIZE {
+        HEADER_PACKED_SIZE + sizeof(ServerConfig::width) + sizeof(ServerConfig::height) + sizeof(ServerConfig::seed) +
         sizeof(ServerConfig::minFoodInArena) + sizeof(ServerConfig::foodSpawnFromBodySegmentProbability) +
         sizeof(ServerConfig::speedBoostProbability) + sizeof(ServerConfig::speedBoostRatio) +
         sizeof(ServerConfig::movementFrequencyMs) + sizeof(ServerConfig::boostedMovementFrequencyMs) +
@@ -118,7 +119,7 @@ namespace protocol {
 
     struct GameState {
         struct Food {
-            int32_t colour;
+            int32_t color;
             char icon;
             int32_t x;
             int32_t y;
@@ -129,7 +130,7 @@ namespace protocol {
             using Segment = std::pair<int32_t, int32_t>;
 
             int32_t clientId;
-            int32_t colour;
+            int32_t color;
             char direction;
             int32_t score;
             char username[16];
@@ -152,7 +153,7 @@ namespace protocol {
     static_assert(alignof(GameState::Player) == 8);
     static_assert(sizeof(GameState::Player::Segment) == 8);
     static_assert(offsetof(GameState::Player, clientId) == 0);
-    static_assert(offsetof(GameState::Player, colour) == 4);
+    static_assert(offsetof(GameState::Player, color) == 4);
     static_assert(offsetof(GameState::Player, direction) == 8);
     static_assert(offsetof(GameState::Player, score) == 12);
     static_assert(offsetof(GameState::Player, username) == 16);
@@ -160,7 +161,7 @@ namespace protocol {
 
     // host native endianess is assumed - sending and receiving little endian
     template <typename T>
-    inline void readRawBytes(const char * & source, T & dest) {
+    inline void readRawBytes(const char *& source, T & dest) {
         static_assert(std::is_trivially_copyable_v<T>);
         std::memcpy(&dest, source, sizeof(dest));
         source += sizeof(dest);
@@ -168,7 +169,7 @@ namespace protocol {
 
     // use write for fixed size messages (destination buffer already sized)
     template <typename T>
-    inline void writeRawBytes(const T & source, char * & dest) {
+    inline void writeRawBytes(const T & source, char *& dest) {
         static_assert(std::is_trivially_copyable_v<T>);
         std::memcpy(dest, &source, sizeof(source));
         dest += sizeof(source);
@@ -212,20 +213,16 @@ namespace protocol {
             char * raw = buf.data() + HEADER_PACKED_SIZE;
             writeRawBytes(msg.username, raw);
             return buf;
-        }
-        else if constexpr (std::is_same_v<T, ClientDisconnect>) {
+        } else if constexpr (std::is_same_v<T, ClientDisconnect>) {
             return buf;
-        }
-        else if constexpr (std::is_same_v<T, ServerWelcome>) {
+        } else if constexpr (std::is_same_v<T, ServerWelcome>) {
             return buf;
-        }
-        else if constexpr (std::is_same_v<T, ClientInput>) {
+        } else if constexpr (std::is_same_v<T, ClientInput>) {
             buf.resize(CLIENT_INPUT_PACKED_SIZE);
             char * raw = buf.data() + HEADER_PACKED_SIZE;
             writeRawBytes(msg.input, raw);
             return buf;
-        }
-        else if constexpr (std::is_same_v<T, ServerConfig>) {
+        } else if constexpr (std::is_same_v<T, ServerConfig>) {
             buf.resize(SERVER_CONFIG_PACKED_SIZE);
             char * raw = buf.data() + HEADER_PACKED_SIZE;
             writeRawBytes(msg.width, raw);
@@ -239,15 +236,14 @@ namespace protocol {
             writeRawBytes(msg.boostedMovementFrequencyMs, raw);
             writeRawBytes(msg.boostDurationMs, raw);
             return buf;
-        }
-        else if constexpr (std::is_same_v<T, GameState>) {
+        } else if constexpr (std::is_same_v<T, GameState>) {
             appendRawBytes(msg.highScore, buf);
             appendRawBytes(msg.highScoreUsername, buf);
 
             uint32_t foodCount {static_cast<uint32_t>(msg.food.size())};
             appendRawBytes(foodCount, buf);
             for (auto & f : msg.food) {
-                appendRawBytes(f.colour, buf);
+                appendRawBytes(f.color, buf);
                 appendRawBytes(f.icon, buf);
                 appendRawBytes(f.x, buf);
                 appendRawBytes(f.y, buf);
@@ -256,7 +252,7 @@ namespace protocol {
             uint32_t speedBoostCount {static_cast<uint32_t>(msg.speedBoosts.size())};
             appendRawBytes(speedBoostCount, buf);
             for (auto & sb : msg.speedBoosts) {
-                appendRawBytes(sb.colour, buf);
+                appendRawBytes(sb.color, buf);
                 appendRawBytes(sb.icon, buf);
                 appendRawBytes(sb.x, buf);
                 appendRawBytes(sb.y, buf);
@@ -267,7 +263,7 @@ namespace protocol {
             appendRawBytes(playerCount, buf);
             for (auto & p : msg.players) {
                 appendRawBytes(p.clientId, buf);
-                appendRawBytes(p.colour, buf);
+                appendRawBytes(p.color, buf);
                 appendRawBytes(p.direction, buf);
                 appendRawBytes(p.score, buf);
                 appendRawBytes(p.username, buf);
@@ -280,8 +276,7 @@ namespace protocol {
             }
 
             return buf;
-        }
-        else {
+        } else {
             throw std::runtime_error("Invalid MessageType");
         }
     }
@@ -345,7 +340,7 @@ namespace protocol {
             msg.food.reserve(foodCount);
             for (uint32_t i = 0; i < foodCount; i++) {
                 GameState::Food f;
-                readRawBytes(raw, f.colour);
+                readRawBytes(raw, f.color);
                 readRawBytes(raw, f.icon);
                 readRawBytes(raw, f.x);
                 readRawBytes(raw, f.y);
@@ -357,7 +352,7 @@ namespace protocol {
             msg.speedBoosts.reserve(speedBoostCount);
             for (uint32_t i = 0; i < speedBoostCount; i++) {
                 GameState::SpeedBoost sb;
-                readRawBytes(raw, sb.colour);
+                readRawBytes(raw, sb.color);
                 readRawBytes(raw, sb.icon);
                 readRawBytes(raw, sb.x);
                 readRawBytes(raw, sb.y);
@@ -371,7 +366,7 @@ namespace protocol {
             for (uint32_t i = 0; i < playerCount; i++) {
                 GameState::Player p;
                 readRawBytes(raw, p.clientId);
-                readRawBytes(raw, p.colour);
+                readRawBytes(raw, p.color);
                 readRawBytes(raw, p.direction);
                 readRawBytes(raw, p.score);
                 readRawBytes(raw, p.username);
@@ -435,34 +430,6 @@ namespace protocol {
             out.boostDurationMs = j["boost_duration_ms"];
             return serialise(out);
         }
-        case MessageType::GAME_STATE: {
-            json j = json::parse(msg.message);
-            GameState out {};
-            out.hdr = hdr;
-            out.highScore = j["server_high_score"][1];
-            std::strncpy(out.highScoreUsername, j["server_high_score"][0].get<std::string>().c_str(),
-                         sizeof(out.highScoreUsername));
-
-            for (const json & f : j["food"]) {
-                out.food.push_back({f["color"], f["icon"].get<std::string>()[0], f["x"], f["y"]});
-            }
-            for (const json & sb : j["speed_boosts"]) {
-                out.speedBoosts.push_back({sb["color"], sb["icon"].get<std::string>()[0], sb["x"], sb["y"]});
-            }
-            for (const json & p : j["players"]) {
-                GameState::Player player {};
-                player.clientId = p["client_id"];
-                player.colour = p["color"];
-                player.direction = p["direction"].get<std::string>()[0];
-                player.score = p["score"];
-                std::strncpy(player.username, p["name"].get<std::string>().c_str(), sizeof(player.username));
-                for (const json & seg : p["segments"]) {
-                    player.segments.push_back({seg[0], seg[1]});
-                }
-                out.players.push_back(std::move(player));
-            }
-            return serialise(out);
-        }
         default:
             throw std::runtime_error("Invalid MessageType");
         }
@@ -476,8 +443,8 @@ namespace protocol {
         switch (hdr.messageType) {
         case MessageType::CLIENT_JOIN: {
             const ClientJoin m {std::get<ClientJoin>(deserialise(str))};
-            return {hdr.messageType, Bytes(m.username, strnlen(m.username, sizeof(m.username))),
-                    hdr.clientId, hdr.sequence, hdr.transactTime};
+            return {hdr.messageType, Bytes(m.username, strnlen(m.username, sizeof(m.username))), hdr.clientId,
+                    hdr.sequence, hdr.transactTime};
         }
         case MessageType::CLIENT_INPUT: {
             const ClientInput m {std::get<ClientInput>(deserialise(str))};
@@ -514,7 +481,7 @@ namespace protocol {
                 pj["direction"] = std::string(1, p.direction);
                 pj["name"] = std::string(p.username, strnlen(p.username, sizeof(p.username)));
                 pj["score"] = p.score;
-                pj["color"] = p.colour;
+                pj["color"] = p.color;
                 pj["segments"] = json::array();
                 for (const std::pair<int32_t, int32_t> & seg : p.segments) {
                     pj["segments"].push_back({seg.first, seg.second});
@@ -527,7 +494,7 @@ namespace protocol {
                 fj["x"] = f.x;
                 fj["y"] = f.y;
                 fj["icon"] = std::string(1, f.icon);
-                fj["color"] = f.colour;
+                fj["color"] = f.color;
                 j["food"].push_back(fj);
             }
             j["speed_boosts"] = json::array();
@@ -536,7 +503,7 @@ namespace protocol {
                 sbj["x"] = sb.x;
                 sbj["y"] = sb.y;
                 sbj["icon"] = std::string(1, sb.icon);
-                sbj["color"] = sb.colour;
+                sbj["color"] = sb.color;
                 j["speed_boosts"].push_back(sbj);
             }
             return {hdr.messageType, j.dump(), hdr.clientId, hdr.sequence, hdr.transactTime};
