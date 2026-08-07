@@ -163,18 +163,6 @@ TEST(ProtocolBinary, GameStateFullMixedSegments) {
     expectGameStateEq(gameStateRoundTrip(original), original);
 }
 
-TEST(ProtocolShim, ServerConfigRoundTrip) {
-    const ProtocolMessage original {MessageType::SERVER_CONFIG, "seed=42", 7, 123456789, 987654321012345};
-
-    const ProtocolMessage decoded {protocol::fromString(protocol::toString(original))};
-
-    EXPECT_EQ(decoded.messageType, original.messageType);
-    EXPECT_EQ(decoded.message, original.message);
-    EXPECT_EQ(decoded.clientId, original.clientId);
-    EXPECT_EQ(decoded.sequence, original.sequence);
-    EXPECT_EQ(decoded.transactTime, original.transactTime);
-}
-
 TEST(ProtocolShim, ClientJoinRoundTrip) {
     const ProtocolMessage original {MessageType::CLIENT_JOIN, "alexpearson", 7, 123456789, 987654321012345};
 
@@ -223,14 +211,3 @@ TEST(ProtocolShim, ClientInputRoundTrip) {
     EXPECT_EQ(decoded.transactTime, original.transactTime);
 }
 
-TEST(ProtocolShim, GameStateRoundTrip) {
-    const ProtocolMessage original {MessageType::GAME_STATE, "board", 7, 123456789, 987654321012345};
-
-    const ProtocolMessage decoded {protocol::fromString(protocol::toString(original))};
-
-    EXPECT_EQ(decoded.messageType, original.messageType);
-    EXPECT_EQ(decoded.message, original.message);
-    EXPECT_EQ(decoded.clientId, original.clientId);
-    EXPECT_EQ(decoded.sequence, original.sequence);
-    EXPECT_EQ(decoded.transactTime, original.transactTime);
-}

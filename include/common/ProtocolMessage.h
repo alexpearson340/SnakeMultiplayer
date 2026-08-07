@@ -26,31 +26,6 @@ struct ProtocolMessage {
     int64_t transactTime {-1};
 };
 
-namespace jsonprotocol {
-
-    inline Bytes toString(const ProtocolMessage & msg) {
-        json j {{"message_type", static_cast<int>(msg.messageType)},
-                {"message", msg.message},
-                {"client_id", msg.clientId},
-                {"sequence", msg.sequence},
-                {"transact_time", msg.transactTime}};
-        return j.dump();
-    }
-
-    inline ProtocolMessage fromString(const Bytes & str) {
-        json j = json::parse(str);
-        return {static_cast<MessageType>(j["message_type"]), j["message"], j["client_id"],
-                static_cast<int64_t>(j["sequence"]), static_cast<int64_t>(j["transact_time"])};
-    }
-
-    inline ProtocolMessage fromString(const Bytes & str, int clientId) {
-        ProtocolMessage pm {fromString(str)};
-        pm.clientId = clientId;
-        return pm;
-    };
-
-}; // namespace jsonprotocol
-
 namespace protocol {
     struct ServerConfig;
     struct ClientInput;
@@ -444,9 +419,50 @@ namespace protocol {
             out.input = msg.message[0];
             return serialise(out);
         }
-        case MessageType::SERVER_CONFIG:
-        case MessageType::GAME_STATE:
-            return jsonprotocol::toString(msg);
+        case MessageType::SERVER_CONFIG: {
+            json j = json::parse(msg.message);
+            ServerConfig out {};
+            out.hdr = hdr;
+            out.width = j["width"];
+            out.height = j["height"];
+            out.seed = j["seed"];
+            out.minFoodInArena = j["min_food_in_arena"];
+            out.foodSpawnFromBodySegmentProbability = j["food_spawn_from_body_segment_probability"];
+            out.speedBoostProbability = j["speed_boost_probability"];
+            out.speedBoostRatio = j["speed_boost_ratio"];
+            out.movementFrequencyMs = j["movement_frequency_ms"];
+            out.boostedMovementFrequencyMs = j["boosted_movement_frequency_ms"];
+            out.boostDurationMs = j["boost_duration_ms"];
+            return serialise(out);
+        }
+        case MessageType::GAME_STATE: {
+            json j = json::parse(msg.message);
+            GameState out {};
+            out.hdr = hdr;
+            out.highScore = j["server_high_score"][1];
+            std::strncpy(out.highScoreUsername, j["server_high_score"][0].get<std::string>().c_str(),
+                         sizeof(out.highScoreUsername));
+
+            for (const json & f : j["food"]) {
+                out.food.push_back({f["color"], f["icon"].get<std::string>()[0], f["x"], f["y"]});
+            }
+            for (const json & sb : j["speed_boosts"]) {
+                out.speedBoosts.push_back({sb["color"], sb["icon"].get<std::string>()[0], sb["x"], sb["y"]});
+            }
+            for (const json & p : j["players"]) {
+                GameState::Player player {};
+                player.clientId = p["client_id"];
+                player.colour = p["color"];
+                player.direction = p["direction"].get<std::string>()[0];
+                player.score = p["score"];
+                std::strncpy(player.username, p["name"].get<std::string>().c_str(), sizeof(player.username));
+                for (const json & seg : p["segments"]) {
+                    player.segments.push_back({seg[0], seg[1]});
+                }
+                out.players.push_back(std::move(player));
+            }
+            return serialise(out);
+        }
         default:
             throw std::runtime_error("Invalid MessageType");
         }
@@ -456,9 +472,6 @@ namespace protocol {
     // binary frames start with a little-endian messageType int32 (byte 0 in 0x00..0x05),
     // so peek byte 0 to demux while encodings are mixed.
     inline ProtocolMessage fromString(const Bytes & str) {
-        if (str[0] == '{') {
-            return jsonprotocol::fromString(str);
-        }
         Header hdr {deserialiseHeader(str)};
         switch (hdr.messageType) {
         case MessageType::CLIENT_JOIN: {
@@ -473,6 +486,61 @@ namespace protocol {
         case MessageType::CLIENT_DISCONNECT:
         case MessageType::SERVER_WELCOME:
             return {hdr.messageType, "", hdr.clientId, hdr.sequence, hdr.transactTime};
+        case MessageType::SERVER_CONFIG: {
+            const ServerConfig m {std::get<ServerConfig>(deserialise(str))};
+            json j;
+            j["width"] = m.width;
+            j["height"] = m.height;
+            j["seed"] = m.seed;
+            j["movement_frequency_ms"] = m.movementFrequencyMs;
+            j["boosted_movement_frequency_ms"] = m.boostedMovementFrequencyMs;
+            j["boost_duration_ms"] = m.boostDurationMs;
+            j["min_food_in_arena"] = m.minFoodInArena;
+            j["food_spawn_from_body_segment_probability"] = m.foodSpawnFromBodySegmentProbability;
+            j["speed_boost_probability"] = m.speedBoostProbability;
+            j["speed_boost_ratio"] = m.speedBoostRatio;
+            return {hdr.messageType, j.dump(), hdr.clientId, hdr.sequence, hdr.transactTime};
+        }
+        case MessageType::GAME_STATE: {
+            const GameState m {std::get<GameState>(deserialise(str))};
+            json j;
+            j["server_high_score"] = {
+                std::string(m.highScoreUsername, strnlen(m.highScoreUsername, sizeof(m.highScoreUsername))),
+                m.highScore};
+            j["players"] = json::array();
+            for (const GameState::Player & p : m.players) {
+                json pj;
+                pj["client_id"] = p.clientId;
+                pj["direction"] = std::string(1, p.direction);
+                pj["name"] = std::string(p.username, strnlen(p.username, sizeof(p.username)));
+                pj["score"] = p.score;
+                pj["color"] = p.colour;
+                pj["segments"] = json::array();
+                for (const std::pair<int32_t, int32_t> & seg : p.segments) {
+                    pj["segments"].push_back({seg.first, seg.second});
+                }
+                j["players"].push_back(pj);
+            }
+            j["food"] = json::array();
+            for (const GameState::Food & f : m.food) {
+                json fj;
+                fj["x"] = f.x;
+                fj["y"] = f.y;
+                fj["icon"] = std::string(1, f.icon);
+                fj["color"] = f.colour;
+                j["food"].push_back(fj);
+            }
+            j["speed_boosts"] = json::array();
+            for (const GameState::Food & sb : m.speedBoosts) {
+                json sbj;
+                sbj["x"] = sb.x;
+                sbj["y"] = sb.y;
+                sbj["icon"] = std::string(1, sb.icon);
+                sbj["color"] = sb.colour;
+                j["speed_boosts"].push_back(sbj);
+            }
+            return {hdr.messageType, j.dump(), hdr.clientId, hdr.sequence, hdr.transactTime};
+        }
         default:
             throw std::runtime_error("Invalid MessageType");
         }
