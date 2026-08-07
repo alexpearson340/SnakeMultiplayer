@@ -414,22 +414,6 @@ namespace protocol {
             out.input = msg.message[0];
             return serialise(out);
         }
-        case MessageType::SERVER_CONFIG: {
-            json j = json::parse(msg.message);
-            ServerConfig out {};
-            out.hdr = hdr;
-            out.width = j["width"];
-            out.height = j["height"];
-            out.seed = j["seed"];
-            out.minFoodInArena = j["min_food_in_arena"];
-            out.foodSpawnFromBodySegmentProbability = j["food_spawn_from_body_segment_probability"];
-            out.speedBoostProbability = j["speed_boost_probability"];
-            out.speedBoostRatio = j["speed_boost_ratio"];
-            out.movementFrequencyMs = j["movement_frequency_ms"];
-            out.boostedMovementFrequencyMs = j["boosted_movement_frequency_ms"];
-            out.boostDurationMs = j["boost_duration_ms"];
-            return serialise(out);
-        }
         default:
             throw std::runtime_error("Invalid MessageType");
         }

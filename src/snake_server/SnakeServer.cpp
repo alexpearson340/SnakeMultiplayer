@@ -1,6 +1,5 @@
 #include "snake_server/SnakeServer.h"
 #include "common/Constants.h"
-#include "common/Json.h"
 #include "common/Log.h"
 #include "common/MessageLogWriter.h"
 #include <chrono>
@@ -71,18 +70,19 @@ void SnakeServer::run() {
 }
 
 void SnakeServer::recordServerConfig() {
-    json sessionConfig;
-    sessionConfig["width"] = width;
-    sessionConfig["height"] = height;
-    sessionConfig["seed"] = seed;
-    sessionConfig["movement_frequency_ms"] = movementFrequencyMs.count();
-    sessionConfig["boosted_movement_frequency_ms"] = boostedMovementFrequencyMs.count();
-    sessionConfig["boost_duration_ms"] = boostDurationMs.count();
-    sessionConfig["min_food_in_arena"] = MIN_FOOD_IN_ARENA;
-    sessionConfig["food_spawn_from_body_segment_probability"] = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
-    sessionConfig["speed_boost_probability"] = SPEED_BOOST_PROBABILITY;
-    sessionConfig["speed_boost_ratio"] = SPEED_BOOST_RATIO;
-    msgLogWriter.log(protocol::toString(stamped(ProtocolMessage {MessageType::SERVER_CONFIG, sessionConfig.dump()})));
+    protocol::ServerConfig serverConfig;
+    serverConfig.hdr.messageType = MessageType::SERVER_CONFIG;
+    serverConfig.width = width;
+    serverConfig.height = height;
+    serverConfig.seed = seed;
+    serverConfig.minFoodInArena = MIN_FOOD_IN_ARENA;
+    serverConfig.foodSpawnFromBodySegmentProbability = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
+    serverConfig.speedBoostProbability = SPEED_BOOST_PROBABILITY;
+    serverConfig.speedBoostRatio = SPEED_BOOST_RATIO;
+    serverConfig.movementFrequencyMs = movementFrequencyMs.count();
+    serverConfig.boostedMovementFrequencyMs = boostedMovementFrequencyMs.count();
+    serverConfig.boostDurationMs = boostDurationMs.count();
+    msgLogWriter.log(protocol::serialise(stamped(serverConfig)));
 }
 
 bool SnakeServer::isInReplay() const {
