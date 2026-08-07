@@ -159,6 +159,14 @@ namespace protocol {
     static_assert(offsetof(GameState::Player, username) == 16);
     static_assert(offsetof(GameState::Player, segments) == 32);
 
+    inline Header & header(MessageVariant & msg) {
+        return std::visit([](auto & m) -> Header & {return m.hdr;}, msg);
+    }
+
+    inline const Header & header(const MessageVariant & msg) {
+        return std::visit([](const auto & m) -> const Header & {return m.hdr;}, msg);
+    }
+
     // host native endianess is assumed - sending and receiving little endian
     template <typename T>
     inline void readRawBytes(const char *& source, T & dest) {
@@ -281,6 +289,10 @@ namespace protocol {
         }
     }
 
+    inline Bytes serialise(const MessageVariant & msg) {
+        return std::visit([](const auto & m) -> Bytes {return serialise(m);}, msg);
+    }
+
     inline MessageVariant deserialise(const Bytes & buf) {
         Header hdr;
         hdr = deserialiseHeader(buf);
@@ -387,6 +399,12 @@ namespace protocol {
         }
     }
 
+    inline MessageVariant deserialise(const Bytes & buf, const int clientId) {
+        MessageVariant msg {deserialise(buf)};
+        header(msg).clientId = clientId;
+        return msg;
+    }
+
     // Send-side shim: ProtocolMessage -> typed struct -> binary bytes. Types not yet
     // migrated (SERVER_CONFIG, GAME_STATE) fall back to the json encoding.
     inline Bytes toString(const ProtocolMessage & msg) {
@@ -396,16 +414,6 @@ namespace protocol {
             ClientJoin out {};
             out.hdr = hdr;
             std::strncpy(out.username, msg.message.c_str(), sizeof(out.username));
-            return serialise(out);
-        }
-        case MessageType::CLIENT_DISCONNECT: {
-            ClientDisconnect out;
-            out.hdr = hdr;
-            return serialise(out);
-        }
-        case MessageType::SERVER_WELCOME: {
-            ServerWelcome out;
-            out.hdr = hdr;
             return serialise(out);
         }
         case MessageType::CLIENT_INPUT: {
@@ -425,33 +433,8 @@ namespace protocol {
     inline ProtocolMessage fromString(const Bytes & str) {
         Header hdr {deserialiseHeader(str)};
         switch (hdr.messageType) {
-        case MessageType::CLIENT_JOIN: {
-            const ClientJoin m {std::get<ClientJoin>(deserialise(str))};
-            return {hdr.messageType, Bytes(m.username, strnlen(m.username, sizeof(m.username))), hdr.clientId,
-                    hdr.sequence, hdr.transactTime};
-        }
-        case MessageType::CLIENT_INPUT: {
-            const ClientInput m {std::get<ClientInput>(deserialise(str))};
-            return {hdr.messageType, Bytes(1, m.input), hdr.clientId, hdr.sequence, hdr.transactTime};
-        }
-        case MessageType::CLIENT_DISCONNECT:
         case MessageType::SERVER_WELCOME:
             return {hdr.messageType, "", hdr.clientId, hdr.sequence, hdr.transactTime};
-        case MessageType::SERVER_CONFIG: {
-            const ServerConfig m {std::get<ServerConfig>(deserialise(str))};
-            json j;
-            j["width"] = m.width;
-            j["height"] = m.height;
-            j["seed"] = m.seed;
-            j["movement_frequency_ms"] = m.movementFrequencyMs;
-            j["boosted_movement_frequency_ms"] = m.boostedMovementFrequencyMs;
-            j["boost_duration_ms"] = m.boostDurationMs;
-            j["min_food_in_arena"] = m.minFoodInArena;
-            j["food_spawn_from_body_segment_probability"] = m.foodSpawnFromBodySegmentProbability;
-            j["speed_boost_probability"] = m.speedBoostProbability;
-            j["speed_boost_ratio"] = m.speedBoostRatio;
-            return {hdr.messageType, j.dump(), hdr.clientId, hdr.sequence, hdr.transactTime};
-        }
         case MessageType::GAME_STATE: {
             const GameState m {std::get<GameState>(deserialise(str))};
             json j;

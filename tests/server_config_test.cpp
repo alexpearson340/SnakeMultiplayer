@@ -6,8 +6,10 @@
 #include <optional>
 
 TEST(InitServerConfig, UsesSeedFromHeader) {
-    ProtocolMessage msg {MessageType::SERVER_CONFIG, R"({"seed":42})"};
-    ServerConfig cfg {initServerConfig("test", msg)};
+    protocol::ServerConfig sc {};
+    sc.hdr.messageType = MessageType::SERVER_CONFIG;
+    sc.seed = 42u;
+    ServerConfig cfg {initServerConfig("test", protocol::MessageVariant {sc})};
     EXPECT_EQ(cfg.seed, 42u);
 }
 

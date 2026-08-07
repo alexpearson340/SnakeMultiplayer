@@ -20,11 +20,11 @@ public:
 private:
     void recordServerConfig();
     bool isInReplay() const;
-    std::optional<std::vector<ProtocolMessage>> pollMessages();
-    void handleClientJoin(const ProtocolMessage &);
-    void handleClientDisconnect(const ProtocolMessage &);
-    void handleClientInput(const ProtocolMessage &);
-    void createNewPlayer(const ProtocolMessage &);
+    std::optional<std::vector<protocol::MessageVariant>> pollMessages();
+    void handleClientJoin(const protocol::ClientJoin &);
+    void handleClientDisconnect(const protocol::ClientDisconnect &);
+    void handleClientInput(const protocol::ClientInput &);
+    void createNewPlayer(const protocol::ClientJoin &);
     bool updateSnakes();
     void moveSnake(const int);
     void updateOccupiedCells(const int);
@@ -52,6 +52,11 @@ private:
         if constexpr (std::is_same_v<T, ProtocolMessage>) {
             msg.sequence = currentSequence++;
             msg.transactTime = timer.currentTickAsNanos();
+        }
+        else if constexpr (std::is_same_v<T, protocol::MessageVariant>) {
+            protocol::Header & hdr {protocol::header(msg)};
+            hdr.sequence = currentSequence++;
+            hdr.transactTime = timer.currentTickAsNanos();
         }
         else {
             msg.hdr.sequence = currentSequence++;

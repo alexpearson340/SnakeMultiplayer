@@ -22,11 +22,11 @@ inline constexpr int LOGGING_FLUSH_INTERVAL_SECONDS {3};
 inline std::string LOGGING_FORMAT {"[%Y-%m-%d %H:%M:%S.%f] [{}] [%l] %v"};
 
 namespace SnakeConstants {
-    inline const std::string PLAYER_KEY_QUIT = "q";
-    inline const std::string PLAYER_KEY_UP = "^";
-    inline const std::string PLAYER_KEY_DOWN = "v";
-    inline const std::string PLAYER_KEY_LEFT = "<";
-    inline const std::string PLAYER_KEY_RIGHT = ">";
+    inline const char PLAYER_KEY_QUIT = 'q';
+    inline const char PLAYER_KEY_UP = '^';
+    inline const char PLAYER_KEY_DOWN = 'v';
+    inline const char PLAYER_KEY_LEFT = '<';
+    inline const char PLAYER_KEY_RIGHT = '>';
 } // namespace SnakeConstants
 
 enum class Color : int32_t {

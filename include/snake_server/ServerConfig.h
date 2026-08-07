@@ -8,7 +8,6 @@
 #include <string>
 
 #include "common/Constants.h"
-#include "common/Json.h"
 #include "common/ProtocolMessage.h"
 
 struct ServerConfig {
@@ -22,19 +21,20 @@ struct ServerConfig {
     const std::chrono::milliseconds boostDurationMs;
 };
 
-inline ServerConfig initServerConfig(const std::string & applicationName, const std::optional<ProtocolMessage> & msg) {
-    json j = json::object();
+inline ServerConfig initServerConfig(const std::string & applicationName,
+                                     const std::optional<protocol::MessageVariant> & msg) {
+    std::uint32_t seed {std::random_device {}()};
     if (msg.has_value()) {
-        assert(msg->messageType == MessageType::SERVER_CONFIG &&
-               "initServerConfig ProtocolMessage must be type SERVER_CONFIG");
-        j = json::parse(msg->message);
+        assert(protocol::header(*msg).messageType == MessageType::SERVER_CONFIG &&
+               "initServerConfig message must be type SERVER_CONFIG");
+        seed = std::get<protocol::ServerConfig>(*msg).seed;
     }
     return ServerConfig {
         .applicationName = applicationName,
         .port = SERVER_PORT,
         .width = ARENA_WIDTH,
         .height = ARENA_HEIGHT,
-        .seed = j.value("seed", std::random_device {}()),
+        .seed = seed,
         .movementFrequencyMs = std::chrono::milliseconds(MOVEMENT_FREQUENCY_MS),
         .boostedMovementFrequencyMs = std::chrono::milliseconds(BOOSTED_MOVEMENT_FREQUENCY_MS),
         .boostDurationMs = std::chrono::milliseconds(SPEED_BOOST_DURATION_MS),
