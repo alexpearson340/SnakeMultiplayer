@@ -17,13 +17,13 @@ int main() {
     // Replay mode is selected by the SNAKE_REPLAY env var, whose value
     // is the replay file path. If it is unset, run in normal mode
     std::optional<MessageLogReader> reader;
-    std::optional<ProtocolMessage> header;
+    std::optional<protocol::MessageVariant> firstMessage;
     if (const char * replayPath = std::getenv("SNAKE_REPLAY"); replayPath != nullptr && replayPath[0] != '\0') {
         reader.emplace(replayPath);
-        header = reader->first();
+        firstMessage = reader->first();
     }
 
-    SnakeServer server {initServerConfig(applicationName, header), std::move(reader)};
+    SnakeServer server {initServerConfig(applicationName, firstMessage), std::move(reader)};
     server.run();
     return 0;
 }

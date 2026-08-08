@@ -1,7 +1,8 @@
 #pragma once
 
-#include "common/Json.h"
+#include "common/Protocol.h"
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -37,33 +38,30 @@ namespace client {
         std::pair<std::string, int> serverHighScore;
     };
 
-    inline GameState parseGameState(const std::string & jsonStr) {
-        json j = json::parse(jsonStr);
-
+    inline GameState fromProtocol(const protocol::GameState & msg) {
         // players
         std::unordered_map<int, PlayerData> players {};
-        for (auto & p : j["players"]) {
+        for (auto & p : msg.players) {
             std::vector<std::pair<int, int>> segments {};
-            for (auto & s : p["segments"]) {
-                segments.push_back({s[0], s[1]});
+            for (auto & s : p.segments) {
+                segments.push_back({s.first, s.second});
             }
-            players[p["client_id"]] = {
-                p["client_id"], p["direction"].get<std::string>()[0], p["name"], p["score"], p["color"], segments};
+            players[p.clientId] = {p.clientId, p.direction, p.username, p.score, p.color, segments};
         }
 
         // food
         std::vector<FoodData> food {};
-        for (auto & f : j["food"]) {
-            food.push_back({f["x"], f["y"], f["icon"].get<std::string>()[0], f["color"]});
+        for (auto & f : msg.food) {
+            food.push_back({f.x, f.y, f.icon, f.color});
         }
 
         // speed boosts
         std::vector<SpeedBoostsData> speedBoosts {};
-        for (auto & s : j["speed_boosts"]) {
-            speedBoosts.push_back({s["x"], s["y"], s["icon"].get<std::string>()[0], s["color"]});
+        for (auto & s : msg.speedBoosts) {
+            speedBoosts.push_back({s.x, s.y, s.icon, s.color});
         }
 
-        std::pair<std::string, int> serverHighScore {j["server_high_score"][0], j["server_high_score"][1]};
+        std::pair<std::string, int> serverHighScore {msg.highScoreUsername, msg.highScore};
 
         return {players, food, speedBoosts, serverHighScore};
     }

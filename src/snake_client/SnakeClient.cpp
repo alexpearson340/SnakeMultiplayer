@@ -1,6 +1,6 @@
 #include "snake_client/SnakeClient.h"
 #include "common/Constants.h"
-#include "common/ProtocolMessage.h"
+#include "common/Protocol.h"
 #include <cstdlib>
 #include <locale.h>
 #include <ncurses.h>
@@ -37,9 +37,12 @@ void SnakeClient::run() {
 
 void SnakeClient::joinGame() {
     const char * username = getenv("USER");
-    if (!username)
+    if (!username) {
         username = "unknown";
-    network.sendToServer({protocol::toString({MessageType::CLIENT_JOIN, username, clientId})});
+    }
+    protocol::ClientJoin join {{protocol::MessageType::CLIENT_JOIN, clientId}, {}};
+    std::strncpy(join.username, username, sizeof(join.username) - 1);
+    network.sendToServer({protocol::serialise(join)});
 }
 
 void SnakeClient::handleInput() {
@@ -63,25 +66,26 @@ void SnakeClient::handleInput() {
 }
 
 void SnakeClient::sendPlayerInput() {
-    network.sendToServer({protocol::toString({MessageType::CLIENT_INPUT, std::string(1, playerInput), clientId})});
+    network.sendToServer(
+        {protocol::serialise(protocol::ClientInput {{protocol::MessageType::CLIENT_INPUT, clientId}, playerInput})});
     playerInput = '\0';
 }
 
 void SnakeClient::receiveUpdates() {
     std::vector<Bytes> messages {network.receiveFromServer()};
-    std::optional<ProtocolMessage> latestGameState;
+    std::optional<protocol::GameState> latestGameState;
 
     for (auto & msgBytes : messages) {
-        ProtocolMessage msg {protocol::fromString(msgBytes)};
-        switch (msg.messageType) {
-        case MessageType::SERVER_WELCOME:
-            handleServerWelcome(msg);
+        protocol::MessageVariant msg {protocol::deserialise(msgBytes)};
+        switch (protocol::header(msg).messageType) {
+        case protocol::MessageType::SERVER_WELCOME:
+            handleServerWelcome(std::get<protocol::ServerWelcome>(msg));
             break;
-        case MessageType::GAME_STATE:
-            latestGameState = std::move(msg);
+        case protocol::MessageType::GAME_STATE:
+            latestGameState = std::move(std::get<protocol::GameState>(msg));
             break;
         default:
-            throw std::runtime_error("Invalid MessageType");
+            throw std::runtime_error("Invalid protocol::MessageType");
         }
     }
 
@@ -93,13 +97,13 @@ void SnakeClient::receiveUpdates() {
     }
 }
 
-void SnakeClient::handleServerWelcome(const ProtocolMessage & msg) {
-    clientId = msg.clientId;
+void SnakeClient::handleServerWelcome(const protocol::ServerWelcome & msg) {
+    clientId = msg.hdr.clientId;
     playing = true;
 }
 
-void SnakeClient::handleGameStateMessage(const ProtocolMessage & msg) {
-    gameState = client::parseGameState(msg.message);
+void SnakeClient::handleGameStateMessage(const protocol::GameState & msg) {
+    gameState = client::fromProtocol(msg);
     if (!gameState.players.contains(clientId)) {
         playing = false;
         clientId = -1;

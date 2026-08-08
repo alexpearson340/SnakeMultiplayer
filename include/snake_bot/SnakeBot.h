@@ -15,8 +15,8 @@ private:
     void createBot();
     void joinGame();
     void receiveUpdates();
-    void handleServerWelcome(const ProtocolMessage & msg);
-    void handleGameStateMessage(const ProtocolMessage & msg);
+    void handleServerWelcome(const protocol::ServerWelcome & msg);
+    void handleGameStateMessage(const protocol::GameState & msg);
     void buildArenaMap();
     void sendInput();
     char calculateRandomMove();

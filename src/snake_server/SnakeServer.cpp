@@ -1,6 +1,5 @@
 #include "snake_server/SnakeServer.h"
 #include "common/Constants.h"
-#include "common/Json.h"
 #include "common/Log.h"
 #include "common/MessageLogWriter.h"
 #include <chrono>
@@ -32,28 +31,29 @@ void SnakeServer::run() {
     const std::chrono::time_point<std::chrono::steady_clock> start {std::chrono::steady_clock::now()};
     int64_t ticks {0};
 
-    while (std::optional<std::vector<ProtocolMessage>> messages = pollMessages()) {
+    while (std::optional<std::vector<protocol::MessageVariant>> messages = pollMessages()) {
         ticks++;
         replaceFood();
         bool stateChanged = false;
         for (auto & msg : messages.value()) {
             stampMessage(msg);
-            std::string msgBytes {protocol::toString(msg)};
+            std::string msgBytes {protocol::serialise(msg)};
             msgLogWriter.log(msgBytes);
-            switch (msg.messageType) {
-            case MessageType::CLIENT_JOIN:
-                handleClientJoin(msg);
+            switch (protocol::header(msg).messageType) {
+            case protocol::MessageType::CLIENT_JOIN:
+                handleClientJoin(std::get<protocol::ClientJoin>(msg));
                 stateChanged = true;
                 break;
-            case MessageType::CLIENT_INPUT:
-                handleClientInput(msg);
+            case protocol::MessageType::CLIENT_INPUT:
+                handleClientInput(std::get<protocol::ClientInput>(msg));
                 break;
-            case MessageType::CLIENT_DISCONNECT:
-                handleClientDisconnect(msg);
+            case protocol::MessageType::CLIENT_DISCONNECT:
+                handleClientDisconnect(std::get<protocol::ClientDisconnect>(msg));
                 stateChanged = true;
                 break;
             default:
-                throw std::runtime_error("Invalid MessageType");
+                spdlog::error("Invalid protocol::MessageType in server dispatch loop: " + std::to_string(static_cast<int>(protocol::header(msg).messageType)));
+                break;
             }
         }
 
@@ -71,42 +71,35 @@ void SnakeServer::run() {
 }
 
 void SnakeServer::recordServerConfig() {
-    json sessionConfig;
-    sessionConfig["width"] = width;
-    sessionConfig["height"] = height;
-    sessionConfig["seed"] = seed;
-    sessionConfig["movement_frequency_ms"] = movementFrequencyMs.count();
-    sessionConfig["boosted_movement_frequency_ms"] = boostedMovementFrequencyMs.count();
-    sessionConfig["boost_duration_ms"] = boostDurationMs.count();
-    sessionConfig["min_food_in_arena"] = MIN_FOOD_IN_ARENA;
-    sessionConfig["food_spawn_from_body_segment_probability"] = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
-    sessionConfig["speed_boost_probability"] = SPEED_BOOST_PROBABILITY;
-    sessionConfig["speed_boost_ratio"] = SPEED_BOOST_RATIO;
-    msgLogWriter.log(protocol::toString(stamped({MessageType::SERVER_CONFIG, sessionConfig.dump()})));
-}
-
-ProtocolMessage SnakeServer::stamped(ProtocolMessage msg) {
-    stampMessage(msg);
-    return msg;
-}
-
-void SnakeServer::stampMessage(ProtocolMessage & msg) {
-    msg.sequence = currentSequence++;
-    msg.transactTime = timer.currentTickAsNanos();
+    protocol::ServerConfig serverConfig;
+    serverConfig.hdr.messageType = protocol::MessageType::SERVER_CONFIG;
+    serverConfig.width = width;
+    serverConfig.height = height;
+    serverConfig.seed = seed;
+    serverConfig.minFoodInArena = MIN_FOOD_IN_ARENA;
+    serverConfig.foodSpawnFromBodySegmentProbability = FOOD_SPAWN_FROM_BODY_SEGMENT_PROBABILITY;
+    serverConfig.speedBoostProbability = SPEED_BOOST_PROBABILITY;
+    serverConfig.speedBoostRatio = SPEED_BOOST_RATIO;
+    serverConfig.movementFrequencyMs = movementFrequencyMs.count();
+    serverConfig.boostedMovementFrequencyMs = boostedMovementFrequencyMs.count();
+    serverConfig.boostDurationMs = boostDurationMs.count();
+    msgLogWriter.log(protocol::serialise(stamped(serverConfig)));
 }
 
 bool SnakeServer::isInReplay() const {
     return replayFile.has_value();
 }
 
-std::optional<std::vector<ProtocolMessage>> SnakeServer::pollMessages() {
-    std::vector<ProtocolMessage> messages;
+std::optional<std::vector<protocol::MessageVariant>> SnakeServer::pollMessages() {
+    std::vector<protocol::MessageVariant> messages;
     if (isInReplay()) {
-        std::vector<ProtocolMessage> fileMessages {replayFile->nextBatch()};
+        std::vector<protocol::MessageVariant> fileMessages {replayFile->nextBatch()};
         if (!fileMessages.empty()) {
             for (auto & pm : fileMessages) {
-                timer.setTick(pm.transactTime);
-                if (pm.messageType != MessageType::SERVER_WELCOME && pm.messageType != MessageType::GAME_STATE) {
+                protocol::Header & hdr {protocol::header(pm)};
+                timer.setTick(hdr.transactTime);
+                if (hdr.messageType != protocol::MessageType::SERVER_WELCOME &&
+                    hdr.messageType != protocol::MessageType::GAME_STATE) {
                     messages.push_back(pm);
                 }
             }
@@ -118,71 +111,75 @@ std::optional<std::vector<ProtocolMessage>> SnakeServer::pollMessages() {
     } else {
         std::vector<std::pair<int, Bytes>> networkMessages {network.pollMessages()};
         for (auto & [clientId, frame] : networkMessages) {
-            messages.push_back(protocol::fromString(frame, clientId));
+            messages.push_back(protocol::deserialise(frame, clientId));
         }
         timer.tick();
     }
 
     // check for client disconnects and sythesise the messages we need
     for (int clientId : network.drainDisconnects()) {
-        messages.push_back({MessageType::CLIENT_DISCONNECT, "", clientId});
+        messages.push_back(protocol::ClientDisconnect {{protocol::MessageType::CLIENT_DISCONNECT, clientId}});
     }
     return messages;
 }
 
-void SnakeServer::handleClientJoin(const ProtocolMessage & msg) {
-    spdlog::info("Received client join request from " + msg.message);
+void SnakeServer::handleClientJoin(const protocol::ClientJoin & msg) {
+    std::string username {msg.username, strnlen(msg.username, sizeof(msg.username))};
+    spdlog::info("Received client join request from " + username);
     createNewPlayer(msg);
 
     // send a SERVER_WELCOME message back to the client, confirming that they are playing
-    std::string msgBytes {protocol::toString(stamped({MessageType::SERVER_WELCOME, "welcome " + msg.message, msg.clientId}))};
+    std::string msgBytes {protocol::serialise(
+        stamped(protocol::ServerWelcome {{protocol::MessageType::SERVER_WELCOME, msg.hdr.clientId}}))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
-        network.sendToClient(msg.clientId, msgBytes);
+        network.sendToClient(msg.hdr.clientId, msgBytes);
     }
-    spdlog::info("Assigned clientId=" + std::to_string(msg.clientId) + " to new client " + msg.message);
-    spdlog::info("Sent client welcome to " + msg.message);
+    spdlog::info("Assigned clientId=" + std::to_string(msg.hdr.clientId) + " to new client " + username);
+    spdlog::info("Sent client welcome to " + username);
 }
 
-void SnakeServer::handleClientDisconnect(const ProtocolMessage & msg) {
-    spdlog::info("Deleting player " + msg.message);
-    clientIdToPlayerMap.erase(msg.clientId);
+void SnakeServer::handleClientDisconnect(const protocol::ClientDisconnect & msg) {
+    if (clientIdToPlayerMap.contains(msg.hdr.clientId)) {
+        spdlog::info("Deleting player " + clientIdToPlayerMap.at(msg.hdr.clientId).name);
+        clientIdToPlayerMap.erase(msg.hdr.clientId);
+    }
 }
 
-void SnakeServer::handleClientInput(const ProtocolMessage & msg) {
-    if (!clientIdToPlayerMap.contains(msg.clientId)) {
-        spdlog::info("Ignoring input from unknown clientId: " + std::to_string(msg.clientId));
+void SnakeServer::handleClientInput(const protocol::ClientInput & msg) {
+    if (!clientIdToPlayerMap.contains(msg.hdr.clientId)) {
+        spdlog::info("Ignoring input from unknown clientId: " + std::to_string(msg.hdr.clientId));
         return;
     }
-    Player & player {clientIdToPlayerMap.at(msg.clientId)};
+    Player & player {clientIdToPlayerMap.at(msg.hdr.clientId)};
 
-    if (msg.message == SnakeConstants::PLAYER_KEY_UP) {
+    if (msg.input == SnakeConstants::PLAYER_KEY_UP) {
         if (player.direction != 'v') {
             player.nextDirection = '^';
         }
-    } else if (msg.message == SnakeConstants::PLAYER_KEY_DOWN) {
+    } else if (msg.input == SnakeConstants::PLAYER_KEY_DOWN) {
         if (player.direction != '^') {
             player.nextDirection = 'v';
         }
-    } else if (msg.message == SnakeConstants::PLAYER_KEY_LEFT) {
+    } else if (msg.input == SnakeConstants::PLAYER_KEY_LEFT) {
         if (player.direction != '>') {
             player.nextDirection = '<';
         }
-    } else if (msg.message == SnakeConstants::PLAYER_KEY_RIGHT) {
+    } else if (msg.input == SnakeConstants::PLAYER_KEY_RIGHT) {
         if (player.direction != '<') {
             player.nextDirection = '>';
         }
     } else {
-        spdlog::info("Unexpected receive from clientId(" + std::to_string(msg.clientId) + "): " + msg.message);
+        spdlog::info("Unexpected receive from clientId(" + std::to_string(msg.hdr.clientId) + "): " + msg.input);
     }
 }
 
-void SnakeServer::createNewPlayer(const ProtocolMessage & msg) {
+void SnakeServer::createNewPlayer(const protocol::ClientJoin & msg) {
     std::uniform_int_distribution<> distX(1 + 5, width - 1 - 5);
     std::uniform_int_distribution<> distY(1 + 5, height - 1 - 5);
-    clientIdToPlayerMap.emplace(msg.clientId,
-                                Player {PlayerNode {distX(gen), distY(gen)}, '^', '^', msg.message, 1,
-                                        static_cast<Color>((msg.clientId % 5) + 2), movementFrequencyMs,
+    clientIdToPlayerMap.emplace(msg.hdr.clientId,
+                                Player {PlayerNode {distX(gen), distY(gen)}, '^', '^', msg.username, 1,
+                                        static_cast<Color>((msg.hdr.clientId % 5) + 2), movementFrequencyMs,
                                         timer.currentTick() + movementFrequencyMs, false, timer.currentTick()});
 }
 
@@ -369,60 +366,47 @@ void SnakeServer::placeSpeedBoost() {
 }
 
 void SnakeServer::broadcastGameState() {
-    std::string msgBytes {protocol::toString(stamped({MessageType::GAME_STATE, buildGameStatePayload()}))};
+    std::string msgBytes {protocol::serialise(stamped(buildGameState()))};
     msgLogWriter.log(msgBytes);
     if (!isInReplay()) {
         network.broadcast(msgBytes);
     }
 }
 
-std::string SnakeServer::buildGameStatePayload() {
-    json gameState;
-    gameState["server_high_score"] = {serverHighScore.first, serverHighScore.second};
-
-    // players
-    gameState["players"] = json::array();
-    for (auto & [clientId, player] : clientIdToPlayerMap) {
-        json playerJson;
-        playerJson["client_id"] = clientId;
-        playerJson["direction"] = std::string(1, player.direction);
-        playerJson["name"] = player.name;
-        playerJson["score"] = player.score;
-        playerJson["color"] = player.color;
-        playerJson["segments"] = json::array();
-
-        // get the x and y coordinates of every body segment
-        std::vector<std::pair<int, int>> segments {};
-        player.head.getSegments(segments);
-        for (auto segment : segments) {
-            playerJson["segments"].push_back({segment.first, segment.second});
-        }
-        gameState["players"].push_back(playerJson);
-    }
+protocol::GameState SnakeServer::buildGameState() {
+    protocol::GameState gameState;
+    gameState.hdr.messageType = protocol::MessageType::GAME_STATE;
+    gameState.highScore = serverHighScore.second;
+    // TODO
+    std::strncpy(gameState.highScoreUsername, serverHighScore.first.c_str(), sizeof(gameState.highScoreUsername));
 
     // food
-    gameState["food"] = json::array();
-    for (auto & [coords, food] : foodMap) {
-        json foodJson;
-        foodJson["x"] = food.x;
-        foodJson["y"] = food.y;
-        foodJson["icon"] = std::string(1, food.icon);
-        foodJson["color"] = food.color;
-        gameState["food"].push_back(foodJson);
+    gameState.food.reserve(foodMap.size());
+    for (auto & [_, f] : foodMap) {
+        gameState.food.emplace_back(static_cast<int32_t>(f.color), f.icon, f.x, f.y);
     }
 
-    // speed boost
-    gameState["speed_boosts"] = json::array();
-    for (auto & [coords, speedBoost] : speedBoostMap) {
-        json speedBoostJson;
-        speedBoostJson["x"] = speedBoost.x;
-        speedBoostJson["y"] = speedBoost.y;
-        speedBoostJson["icon"] = std::string(1, speedBoost.icon);
-        speedBoostJson["color"] = speedBoost.color;
-        gameState["speed_boosts"].push_back(speedBoostJson);
+    // speed boosts
+    gameState.speedBoosts.reserve(speedBoostMap.size());
+    for (auto & [_, sb] : speedBoostMap) {
+        gameState.speedBoosts.emplace_back(static_cast<int32_t>(sb.color), sb.icon, sb.x, sb.y);
     }
 
-    return gameState.dump();
+    // players
+    gameState.players.reserve(clientIdToPlayerMap.size());
+    for (auto & [clientId, p] : clientIdToPlayerMap) {
+        protocol::GameState::Player player;
+        player.clientId = clientId;
+        player.color = static_cast<int32_t>(p.color);
+        player.direction = p.direction;
+        player.score = p.score;
+        // TODO
+        std::strncpy(player.username, p.name.c_str(), sizeof(player.username));
+        p.head.getSegments(player.segments);
+        gameState.players.push_back(std::move(player));
+    }
+
+    return gameState;
 }
 
 void SnakeServer::logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> & start,

@@ -1,10 +1,11 @@
 #pragma once
 
+#include "common/Constants.h"
+#include "common/Protocol.h"
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-#include "common/ProtocolMessage.h"
 
 class NetworkServer {
 public:
@@ -13,7 +14,6 @@ public:
     std::vector<int> drainDisconnects();
     void sendToClient(const int clientId, const Bytes &);
     void broadcast(const Bytes &);
-
 
 private:
     void startServer(int);
@@ -29,6 +29,7 @@ private:
     int epollFd;
     int nextClientId;
 
+    char recvBuffer[SERVER_RECV_BUFFER_SIZE];
     std::unordered_map<int, int> fdToClientIdMap;
     std::unordered_map<int, int> clientIdToFdMap;
     std::unordered_map<int, Bytes> fdToBufferMap;

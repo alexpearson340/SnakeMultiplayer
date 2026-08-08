@@ -19,14 +19,12 @@ public:
 
 private:
     void recordServerConfig();
-    void stampMessage(ProtocolMessage &);
-    ProtocolMessage stamped(ProtocolMessage msg);
     bool isInReplay() const;
-    std::optional<std::vector<ProtocolMessage>> pollMessages();
-    void handleClientJoin(const ProtocolMessage &);
-    void handleClientDisconnect(const ProtocolMessage &);
-    void handleClientInput(const ProtocolMessage &);
-    void createNewPlayer(const ProtocolMessage &);
+    std::optional<std::vector<protocol::MessageVariant>> pollMessages();
+    void handleClientJoin(const protocol::ClientJoin &);
+    void handleClientDisconnect(const protocol::ClientDisconnect &);
+    void handleClientInput(const protocol::ClientInput &);
+    void createNewPlayer(const protocol::ClientJoin &);
     bool updateSnakes();
     void moveSnake(const int);
     void updateOccupiedCells(const int);
@@ -39,8 +37,27 @@ private:
     void placeFood(const int, const int, const Color color = Color::WHITE);
     void placeSpeedBoost();
     void broadcastGameState();
-    std::string buildGameStatePayload();
+    protocol::GameState buildGameState();
     void logEngineBenchmark(const std::chrono::time_point<std::chrono::steady_clock> &, const int64_t &);
+
+    template <typename T>
+    T stamped(T msg) {
+        stampMessage(msg);
+        return msg;
+    }
+    
+    template <typename T>
+    void stampMessage(T & msg) {
+        if constexpr (std::is_same_v<T, protocol::MessageVariant>) {
+            protocol::Header & hdr {protocol::header(msg)};
+            hdr.sequence = currentSequence++;
+            hdr.transactTime = timer.currentTickAsNanos();
+        }
+        else {
+            msg.hdr.sequence = currentSequence++;
+            msg.hdr.transactTime = timer.currentTickAsNanos();
+        }
+    }
 
     int width;
     int height;
