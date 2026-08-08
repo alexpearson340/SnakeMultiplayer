@@ -52,7 +52,8 @@ void SnakeServer::run() {
                 stateChanged = true;
                 break;
             default:
-                throw std::runtime_error("Invalid protocol::MessageType");
+                spdlog::error("Invalid protocol::MessageType in server dispatch loop: " + std::to_string(static_cast<int>(protocol::header(msg).messageType)));
+                break;
             }
         }
 
