@@ -65,18 +65,17 @@ void NetworkClient::sendToServer(const Bytes & bytes) {
     frame.append(reinterpret_cast<const char *>(&len), sizeof(len));
     frame += bytes;
     ssize_t sent = send(serverFd, frame.data(), frame.size(), 0);
-    
+
     if (0 <= sent && static_cast<size_t>(sent) < frame.size()) {
-        throw std::runtime_error(fmt::format("Partial send to server, tried to send {} bytes, actually sent {}, exiting", frame.size(), sent));
-    }
-    else if (sent == -1) {
+        throw std::runtime_error(fmt::format(
+            "Partial send to server, tried to send {} bytes, actually sent {}, exiting", frame.size(), sent));
+    } else if (sent == -1) {
         throw std::runtime_error(fmt::format("Error receieved {} on send to server, exiting", errno));
     }
 }
 
 std::vector<Bytes> NetworkClient::receiveFromServer() {
-    char buffer[4096];
-    ssize_t bytesRead = recv(serverFd, buffer, sizeof(buffer) - 1, 0);
+    ssize_t bytesRead = recv(serverFd, recvBuffer, sizeof(recvBuffer), 0);
 
     if (bytesRead < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -89,7 +88,7 @@ std::vector<Bytes> NetworkClient::receiveFromServer() {
         throw std::runtime_error(fmt::format("Server disconnected, exiting"));
     }
 
-    return parseReceivedPacket(buffer, static_cast<size_t>(bytesRead));
+    return parseReceivedPacket(recvBuffer, static_cast<size_t>(bytesRead));
 }
 
 std::vector<Bytes> NetworkClient::parseReceivedPacket(char * inputBuffer, size_t size) {
@@ -97,10 +96,19 @@ std::vector<Bytes> NetworkClient::parseReceivedPacket(char * inputBuffer, size_t
     messageBuffer += Bytes(inputBuffer, size);
 
     uint32_t len;
-    while (messageBuffer.size() > sizeof(len)) {                // enough bytes for a length prefix
+    while (messageBuffer.size() >= sizeof(len)) {
         memcpy(&len, messageBuffer.data(), sizeof(len));
+
+        // no legit message should be bigger than this - it means we have desynced
+        if (len > CLIENT_RECV_MAX_MESSAGE_SIZE) {
+            throw std::runtime_error(
+                fmt::format("Received message of size {}, which is bigger than maximum allowed {}. Aborting", len,
+                            CLIENT_RECV_MAX_MESSAGE_SIZE));
+        }
+
+        // full frame not here yet - wait
         if (messageBuffer.size() < sizeof(len) + len) {
-            break;                                              // full frame not here yet — wait
+            break;
         }
         frames.push_back(messageBuffer.substr(sizeof(len), len));
         messageBuffer.erase(0, sizeof(len) + len);

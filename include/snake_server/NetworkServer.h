@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common/Constants.h"
 #include "common/Protocol.h"
 #include <string>
 #include <unordered_map>
@@ -28,6 +29,7 @@ private:
     int epollFd;
     int nextClientId;
 
+    char recvBuffer[SERVER_RECV_BUFFER_SIZE];
     std::unordered_map<int, int> fdToClientIdMap;
     std::unordered_map<int, int> clientIdToFdMap;
     std::unordered_map<int, Bytes> fdToBufferMap;

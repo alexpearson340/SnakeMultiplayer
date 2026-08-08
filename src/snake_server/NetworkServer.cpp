@@ -12,7 +12,13 @@
 #include <unistd.h>
 
 NetworkServer::NetworkServer(int port)
-    : serverFd {-1}, epollFd {-1}, nextClientId {1}, fdToClientIdMap {}, clientIdToFdMap {}, fdToBufferMap {}, fdsToDisconnect {} {
+    : serverFd {-1},
+      epollFd {-1},
+      nextClientId {1},
+      fdToClientIdMap {},
+      clientIdToFdMap {},
+      fdToBufferMap {},
+      fdsToDisconnect {} {
     startServer(port);
 }
 
@@ -146,8 +152,7 @@ void NetworkServer::disconnectClient(const int fd) {
 }
 
 std::vector<Bytes> NetworkServer::receiveFromClient(int fd) {
-    char buffer[1024];
-    ssize_t bytesRead = recv(fd, buffer, sizeof(buffer) - 1, 0);
+    ssize_t bytesRead = recv(fd, recvBuffer, sizeof(recvBuffer), 0);
 
     if (bytesRead < 0) {
         if (errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -162,7 +167,7 @@ std::vector<Bytes> NetworkServer::receiveFromClient(int fd) {
         return {};
     }
 
-    return parseReceivedPacket(fd, buffer, static_cast<size_t>(bytesRead));
+    return parseReceivedPacket(fd, recvBuffer, static_cast<size_t>(bytesRead));
 }
 
 std::vector<Bytes> NetworkServer::parseReceivedPacket(int fd, char * inputBuffer, size_t size) {
@@ -171,11 +176,23 @@ std::vector<Bytes> NetworkServer::parseReceivedPacket(int fd, char * inputBuffer
     fdBuffer += Bytes(inputBuffer, size);
 
     uint32_t len;
-    while (fdBuffer.size() >= sizeof(len)) {                 // enough bytes for a length prefix
+    while (fdBuffer.size() >= sizeof(len)) {
         memcpy(&len, fdBuffer.data(), sizeof(len));
-        if (fdBuffer.size() < sizeof(len) + len) {
-            break;                                          // full frame not here yet — wait
+
+        // DDOS protection - no legit message should be bigger than this
+        if (len > SERVER_RECV_MAX_MESSAGE_SIZE) {
+            spdlog::error(
+                "Received message of size {}, which is bigger than maximum allowed {}. Disconnecting client fd={}", len,
+                SERVER_RECV_MAX_MESSAGE_SIZE, fd);
+            fdsToDisconnect.insert(fd);
+            return frames;
         }
+
+        // full frame not here yet - wait
+        if (fdBuffer.size() < sizeof(len) + len) {
+            break;
+        }
+
         frames.push_back(fdBuffer.substr(sizeof(len), len));
         fdBuffer.erase(0, sizeof(len) + len);
     }
@@ -183,7 +200,7 @@ std::vector<Bytes> NetworkServer::parseReceivedPacket(int fd, char * inputBuffer
 }
 
 void NetworkServer::sendToClient(const int clientId, const Bytes & bytes) {
-    networkSend(clientIdToFdMap.at(clientId), bytes); 
+    networkSend(clientIdToFdMap.at(clientId), bytes);
 }
 
 void NetworkServer::broadcast(const Bytes & bytes) {
@@ -204,10 +221,10 @@ void NetworkServer::networkSend(const int fd, const Bytes & bytes) {
     // as a client disconnect. Buffer + retry on
     // partial sends and EAGAIN is todo
     if (0 <= sent && static_cast<size_t>(sent) < frame.size()) {
-        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd, frame.size(), sent);
+        spdlog::warn("Partial send for fd={}, tried to send {} bytes, actually sent {}, disconnecting the client", fd,
+                     frame.size(), sent);
         fdsToDisconnect.insert(fd);
-    }
-    else if (sent == -1) {
+    } else if (sent == -1) {
         spdlog::warn("Error receieved {} on send for fd={}, disconnecting the client", errno, fd);
         fdsToDisconnect.insert(fd);
     }

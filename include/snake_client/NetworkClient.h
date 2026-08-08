@@ -30,5 +30,6 @@ private:
     std::vector<Bytes> parseReceivedPacket(char * buffer, size_t size);
 
     int serverFd;
+    char recvBuffer[CLIENT_RECV_BUFFER_SIZE];
     std::string messageBuffer;
 };

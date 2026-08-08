@@ -2,9 +2,7 @@
 
 #include <string>
 
-inline constexpr int SERVER_PORT {8170};
-inline constexpr int MAX_EVENTS {10};
-inline constexpr int EPOLL_BLOCKING_TIMEOUT_MS {10};
+// gameplay
 inline constexpr int INPUT_BLOCKING_TIMEOUT_MS {10};
 inline constexpr int MOVEMENT_FREQUENCY_MS {200};
 inline constexpr int ARENA_WIDTH {40};
@@ -17,6 +15,16 @@ inline constexpr int SPEED_BOOST_DURATION_MS {8000};
 inline constexpr float SPEED_BOOST_RATIO {1.5};
 inline constexpr int BOOSTED_MOVEMENT_FREQUENCY_MS {static_cast<int>(MOVEMENT_FREQUENCY_MS * (1 / SPEED_BOOST_RATIO))};
 
+// network
+inline constexpr int SERVER_PORT {8170};
+inline constexpr int MAX_EVENTS {10};
+inline constexpr int EPOLL_BLOCKING_TIMEOUT_MS {10};
+inline constexpr size_t SERVER_RECV_BUFFER_SIZE {4096};
+inline constexpr size_t SERVER_RECV_MAX_MESSAGE_SIZE {64};
+inline constexpr size_t CLIENT_RECV_BUFFER_SIZE {32768};
+inline constexpr size_t CLIENT_RECV_MAX_MESSAGE_SIZE {32768};
+
+// logging
 inline constexpr int STATS_FREQUENCY_SECONDS {15};
 inline constexpr int LOGGING_FLUSH_INTERVAL_SECONDS {3};
 inline std::string LOGGING_FORMAT {"[%Y-%m-%d %H:%M:%S.%f] [{}] [%l] %v"};
