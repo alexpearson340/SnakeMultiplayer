@@ -2,10 +2,15 @@
 
 #include <cassert>
 #include <cstddef>
+#include <cstdint>
 #include <cstring>
+#include <spdlog/fmt/fmt.h>
+#include <stdexcept>
 #include <string>
-#include <vector>
 #include <type_traits>
+#include <utility>
+#include <variant>
+#include <vector>
 
 using Bytes = std::string;
 
@@ -155,8 +160,11 @@ namespace protocol {
 
     // host native endianess is assumed - sending and receiving little endian
     template <typename T>
-    inline void readRawBytes(const char *& source, T & dest) {
+    inline void readRawBytes(const char *& source, T & dest, const char * end) {
         static_assert(std::is_trivially_copyable_v<T>);
+        if (source + sizeof(dest) > end) {
+            throw std::runtime_error("deserialise: truncated frame");
+        }
         std::memcpy(&dest, source, sizeof(dest));
         source += sizeof(dest);
     }
@@ -191,11 +199,12 @@ namespace protocol {
 
     inline Header deserialiseHeader(const Bytes & buf) {
         const char * raw = buf.data();
+        const char * end = buf.data() + buf.size();
         Header msg;
-        readRawBytes(raw, msg.messageType);
-        readRawBytes(raw, msg.clientId);
-        readRawBytes(raw, msg.sequence);
-        readRawBytes(raw, msg.transactTime);
+        readRawBytes(raw, msg.messageType, end);
+        readRawBytes(raw, msg.clientId, end);
+        readRawBytes(raw, msg.sequence, end);
+        readRawBytes(raw, msg.transactTime, end);
         return msg;
     }
 
@@ -283,97 +292,108 @@ namespace protocol {
         Header hdr;
         hdr = deserialiseHeader(buf);
         const char * raw = buf.data() + HEADER_PACKED_SIZE;
+        const char * end = buf.data() + buf.size();
 
         switch (hdr.messageType) {
         case MessageType::CLIENT_JOIN: {
-            assert(buf.size() == CLIENT_JOIN_PACKED_SIZE);
+            if (buf.size() != CLIENT_JOIN_PACKED_SIZE) {
+                throw std::runtime_error(fmt::format("ClientJoin unexpected buffer size {}, expected {}", buf.size(), CLIENT_JOIN_PACKED_SIZE));
+            }
             ClientJoin msg;
             msg.hdr = hdr;
-            readRawBytes(raw, msg.username);
+            readRawBytes(raw, msg.username, end);
             return msg;
         }
         case MessageType::CLIENT_DISCONNECT: {
-            assert(buf.size() == CLIENT_DISCONNECT_PACKED_SIZE);
+            if (buf.size() != CLIENT_DISCONNECT_PACKED_SIZE) {
+                throw std::runtime_error(fmt::format("Client Disconnect unexpected buffer size {}, expected {}", buf.size(), CLIENT_DISCONNECT_PACKED_SIZE));
+            }
             ClientDisconnect msg;
             msg.hdr = hdr;
             return msg;
         }
         case MessageType::SERVER_WELCOME: {
-            assert(buf.size() == SERVER_WELCOME_PACKED_SIZE);
+            if (buf.size() != SERVER_WELCOME_PACKED_SIZE) {
+                throw std::runtime_error(fmt::format("ServerWelcome unexpected buffer size {}, expected {}", buf.size(), SERVER_WELCOME_PACKED_SIZE));
+            }
             ServerWelcome msg;
             msg.hdr = hdr;
             return msg;
         }
         case MessageType::CLIENT_INPUT: {
-            assert(buf.size() == CLIENT_INPUT_PACKED_SIZE);
+            if (buf.size() != CLIENT_INPUT_PACKED_SIZE) {
+                throw std::runtime_error(fmt::format("ClientInput unexpected buffer size {}, expected {}", buf.size(), CLIENT_INPUT_PACKED_SIZE));
+            }
             ClientInput msg;
             msg.hdr = hdr;
-            readRawBytes(raw, msg.input);
+            readRawBytes(raw, msg.input, end);
             return msg;
         }
         case MessageType::SERVER_CONFIG: {
-            assert(buf.size() == SERVER_CONFIG_PACKED_SIZE);
+            if (buf.size() != SERVER_CONFIG_PACKED_SIZE) {
+                throw std::runtime_error(fmt::format("ServerConfig unexpected buffer size {}, expected {}", buf.size(), SERVER_CONFIG_PACKED_SIZE));
+            }
             ServerConfig msg;
             msg.hdr = hdr;
-            readRawBytes(raw, msg.width);
-            readRawBytes(raw, msg.height);
-            readRawBytes(raw, msg.seed);
-            readRawBytes(raw, msg.minFoodInArena);
-            readRawBytes(raw, msg.foodSpawnFromBodySegmentProbability);
-            readRawBytes(raw, msg.speedBoostProbability);
-            readRawBytes(raw, msg.speedBoostRatio);
-            readRawBytes(raw, msg.movementFrequencyMs);
-            readRawBytes(raw, msg.boostedMovementFrequencyMs);
-            readRawBytes(raw, msg.boostDurationMs);
+            readRawBytes(raw, msg.width, end);
+            readRawBytes(raw, msg.height, end);
+            readRawBytes(raw, msg.seed, end);
+            readRawBytes(raw, msg.minFoodInArena, end);
+            readRawBytes(raw, msg.foodSpawnFromBodySegmentProbability, end);
+            readRawBytes(raw, msg.speedBoostProbability, end);
+            readRawBytes(raw, msg.speedBoostRatio, end);
+            readRawBytes(raw, msg.movementFrequencyMs, end);
+            readRawBytes(raw, msg.boostedMovementFrequencyMs, end);
+            readRawBytes(raw, msg.boostDurationMs, end);
             return msg;
         }
         case MessageType::GAME_STATE: {
             GameState msg;
             msg.hdr = hdr;
-            readRawBytes(raw, msg.highScore);
-            readRawBytes(raw, msg.highScoreUsername);
+            readRawBytes(raw, msg.highScore, end);
+            readRawBytes(raw, msg.highScoreUsername, end);
 
             uint32_t foodCount;
-            readRawBytes(raw, foodCount);
+            readRawBytes(raw, foodCount, end);
             msg.food.reserve(foodCount);
             for (uint32_t i = 0; i < foodCount; i++) {
                 GameState::Food f;
-                readRawBytes(raw, f.color);
-                readRawBytes(raw, f.icon);
-                readRawBytes(raw, f.x);
-                readRawBytes(raw, f.y);
+                readRawBytes(raw, f.color, end);
+                readRawBytes(raw, f.icon, end);
+                readRawBytes(raw, f.x, end);
+                readRawBytes(raw, f.y, end);
                 msg.food.push_back(f);
             }
 
             uint32_t speedBoostCount;
-            readRawBytes(raw, speedBoostCount);
+            readRawBytes(raw, speedBoostCount, end);
             msg.speedBoosts.reserve(speedBoostCount);
             for (uint32_t i = 0; i < speedBoostCount; i++) {
                 GameState::SpeedBoost sb;
-                readRawBytes(raw, sb.color);
-                readRawBytes(raw, sb.icon);
-                readRawBytes(raw, sb.x);
-                readRawBytes(raw, sb.y);
+                readRawBytes(raw, sb.color, end);
+                readRawBytes(raw, sb.icon, end);
+                readRawBytes(raw, sb.x, end);
+                readRawBytes(raw, sb.y, end);
                 msg.speedBoosts.push_back(sb);
             }
 
             uint32_t playerCount;
             uint32_t segmentCount;
-            readRawBytes(raw, playerCount);
+            readRawBytes(raw, playerCount, end);
             msg.players.reserve(playerCount);
             for (uint32_t i = 0; i < playerCount; i++) {
                 GameState::Player p;
-                readRawBytes(raw, p.clientId);
-                readRawBytes(raw, p.color);
-                readRawBytes(raw, p.direction);
-                readRawBytes(raw, p.score);
-                readRawBytes(raw, p.username);
-                readRawBytes(raw, segmentCount);
+                readRawBytes(raw, p.clientId, end);
+                readRawBytes(raw, p.color, end);
+                readRawBytes(raw, p.direction, end);
+                readRawBytes(raw, p.score, end);
+                readRawBytes(raw, p.username, end);
+                readRawBytes(raw, segmentCount, end);
                 p.segments.reserve(segmentCount);
                 for (uint32_t j = 0; j < segmentCount; j++) {
                     GameState::Player::Segment s;
-                    readRawBytes(raw, s.first);
-                    readRawBytes(raw, s.second);
+                    readRawBytes(raw, s.first, end);
+                    readRawBytes(raw, s.second, end);
                     p.segments.push_back(s);
                 }
                 msg.players.push_back(std::move(p));
