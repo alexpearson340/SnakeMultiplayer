@@ -29,6 +29,7 @@ private:
     void moveSnake(const int);
     void updateOccupiedCells(const int);
     void checkCollisions();
+    std::vector<int> getPlayerHeadsInCell(const std::pair<int, int> &) const;
     void destroyPlayers(std::vector<int> &);
     void feedPlayer(std::pair<int, int> &, const int);
     void boostPlayer(std::pair<int, int> &, const int);
@@ -75,7 +76,6 @@ private:
     NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;
     std::vector<uint16_t> occupiedCellsBodies;
-    std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsHeads;
     std::unordered_map<std::pair<int, int>, Food, PairHash> foodMap;
     std::unordered_map<std::pair<int, int>, SpeedBoost, PairHash> speedBoostMap;
 };

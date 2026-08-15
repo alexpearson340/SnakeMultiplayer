@@ -22,7 +22,6 @@ SnakeServer::SnakeServer(const ServerConfig & config, std::optional<MessageLogRe
       network {config.port},
       clientIdToPlayerMap {},
       occupiedCellsBodies {},
-      occupiedCellsHeads {},
       foodMap {},
       speedBoostMap {} {
 
@@ -192,8 +191,7 @@ bool SnakeServer::updateSnakes() {
     bool snakeUpdates {false};
 
     // todo maybe do a differential update to occupiedCells if we need better performance
-    std::fill(occupiedCellsBodies.begin(), occupiedCellsBodies.end(), uint16_t{0});
-    occupiedCellsHeads.clear();
+    std::fill(occupiedCellsBodies.begin(), occupiedCellsBodies.end(), uint16_t {0});
     for (auto & [clientId, player] : clientIdToPlayerMap) {
         if (player.boosted && player.boostExpireTime <= timer.currentTick()) {
             player.boosted = false;
@@ -233,7 +231,6 @@ void SnakeServer::moveSnake(const int clientId) {
 void SnakeServer::updateOccupiedCells(const int clientId) {
     std::vector<std::pair<int, int>> segments {};
     clientIdToPlayerMap.at(clientId).head.getSegments(segments);
-    occupiedCellsHeads[segments[0]].insert(clientId);
     for (auto it = segments.begin() + 1; it < segments.end(); it++) {
         occupiedCellsBodies.at(static_cast<size_t>((it->second - 1) * width + it->first - 1))++;
     }
@@ -243,7 +240,7 @@ void SnakeServer::checkCollisions() {
     std::vector<int> clientIdsToDestroy;
     for (auto & [clientId, player] : clientIdToPlayerMap) {
         std::pair<int, int> playerHead {player.head.x(), player.head.y()};
-        const auto & playerHeadCells {occupiedCellsHeads.at(playerHead)};
+        const auto playerHeadCells {getPlayerHeadsInCell(playerHead)};
 
         // collision with arena boundary
         if (player.head.y() <= 0) {
@@ -261,21 +258,28 @@ void SnakeServer::checkCollisions() {
         }
 
         // collision with another snake's body
-        else if (occupiedCellsBodies.at(static_cast<size_t>((playerHead.second - 1) * width + playerHead.first - 1)) > 0) {
+        else if (occupiedCellsBodies.at(static_cast<size_t>((playerHead.second - 1) * width + playerHead.first - 1)) >
+                 0) {
             spdlog::info("Destroying " + player.name + " due to snake body collision");
             clientIdsToDestroy.push_back(clientId);
         }
 
         // head-on-head snake collision - whoever arrived into the cell first survives
         else if (playerHeadCells.size() > 1) {
-            int firstPlayerinCell {*std::min_element(
-                playerHeadCells.begin(), playerHeadCells.end(),
-                // Checking who was first in the cell based on nextMoveTime is slightly imperfect.
-                // A client with a faster move speed can arrive later and still have a lower nextMoveTime.
-                // This is probably good enough though
-                [this](const int a, const int b) {
-                    return clientIdToPlayerMap.at(a).nextMoveTime < clientIdToPlayerMap.at(b).nextMoveTime;
-                })};
+            int firstPlayerinCell {
+                *std::min_element(playerHeadCells.begin(), playerHeadCells.end(),
+                                  // Checking who was first in the cell based on nextMoveTime is slightly imperfect.
+                                  // A client with a faster move speed can arrive later and still have a lower
+                                  // nextMoveTime. This is probably good enough though. Deterministically tie break on ID
+                                  [this](const int a, const int b) {
+                                      auto & playerA {clientIdToPlayerMap.at(a)};
+                                      auto & playerB {clientIdToPlayerMap.at(b)};
+                                      if (playerA.nextMoveTime != playerB.nextMoveTime) {
+                                          return playerA.nextMoveTime < playerB.nextMoveTime;
+                                      } else {
+                                          return a < b;
+                                      }
+                                  })};
             if (clientId != firstPlayerinCell) {
                 spdlog::info("Destroying " + player.name + " due to snake head collision");
                 clientIdsToDestroy.push_back(clientId);
@@ -305,6 +309,16 @@ void SnakeServer::checkCollisions() {
     if (!clientIdsToDestroy.empty()) {
         destroyPlayers(clientIdsToDestroy);
     }
+}
+
+std::vector<int> SnakeServer::getPlayerHeadsInCell(const std::pair<int, int> & head) const {
+    std::vector<int> output {};
+    for (auto & [clientId, player] : clientIdToPlayerMap) {
+        if (player.head.x() == head.first && player.head.y() == head.second) {
+            output.push_back(clientId);
+        }
+    }
+    return output;
 }
 
 void SnakeServer::destroyPlayers(std::vector<int> & clientIds) {

@@ -56,24 +56,24 @@ TEST(ReplayDeterminism, ReproducesRecording) {
     const protocol::Header & hdr {protocol::header(actualLast)};
     EXPECT_EQ(hdr.messageType, protocol::MessageType::GAME_STATE);
     EXPECT_EQ(hdr.clientId, -1);
-    EXPECT_EQ(hdr.sequence, 12224);
-    EXPECT_EQ(hdr.transactTime, 10888288655790333);
+    EXPECT_EQ(hdr.sequence, 163167);
+    EXPECT_EQ(hdr.transactTime, 13887458496418125);
 
     const protocol::GameState & gs {std::get<protocol::GameState>(actualLast)};
-    EXPECT_EQ(gs.highScore, 8);
+    EXPECT_EQ(gs.highScore, 37);
     EXPECT_STREQ(gs.highScoreUsername, "bot");
-    EXPECT_EQ(gs.food.size(), 8u);
-    EXPECT_TRUE(gs.speedBoosts.empty());
+    EXPECT_EQ(gs.food.size(), 6u);
+    EXPECT_EQ(gs.speedBoosts.size(), 1u);
     ASSERT_EQ(gs.players.size(), 20u);
 
-    // Anchor on one concrete player: client_id 9, the six-segment snake.
+    // Anchor on one concrete player: client_id 4, the six-segment snake.
     const auto it {std::find_if(gs.players.begin(), gs.players.end(),
-                                [](const protocol::GameState::Player & p) { return p.clientId == 9; })};
+                                [](const protocol::GameState::Player & p) { return p.clientId == 4; })};
     ASSERT_NE(it, gs.players.end());
     EXPECT_EQ(it->color, 6);
     EXPECT_EQ(it->direction, '<');
     EXPECT_EQ(it->score, 6);
     EXPECT_STREQ(it->username, "bot");
     EXPECT_EQ(it->segments, (std::vector<protocol::GameState::Player::Segment> {
-                                {7, 24}, {8, 24}, {8, 23}, {8, 22}, {8, 21}, {8, 20}}));
+                                {6, 31}, {7, 31}, {7, 30}, {7, 29}, {7, 28}, {7, 27}}));
 }

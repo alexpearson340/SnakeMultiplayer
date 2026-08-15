@@ -12,8 +12,8 @@ public:
     void moveTo(int xMove, int yMove);
     void grow();
     void getSegments(std::vector<std::pair<int, int>> &);
-    int x() { return xPos; };
-    int y() { return yPos; };
+    int x() const { return xPos; };
+    int y() const { return yPos; };
 
 private:
     int xPos;
