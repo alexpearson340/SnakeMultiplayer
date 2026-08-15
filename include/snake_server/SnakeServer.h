@@ -74,7 +74,7 @@ private:
     std::optional<MessageLogReader> replayFile;
     NetworkServer network;
     std::unordered_map<int, Player> clientIdToPlayerMap;
-    std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsBodies;
+    std::vector<uint16_t> occupiedCellsBodies;
     std::unordered_map<std::pair<int, int>, std::unordered_set<int>, PairHash> occupiedCellsHeads;
     std::unordered_map<std::pair<int, int>, Food, PairHash> foodMap;
     std::unordered_map<std::pair<int, int>, SpeedBoost, PairHash> speedBoostMap;

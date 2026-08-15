@@ -24,7 +24,11 @@ SnakeServer::SnakeServer(const ServerConfig & config, std::optional<MessageLogRe
       occupiedCellsBodies {},
       occupiedCellsHeads {},
       foodMap {},
-      speedBoostMap {} {}
+      speedBoostMap {} {
+
+    // vector containing count of snake body segments per cell, indexed y*W + x
+    occupiedCellsBodies.resize(static_cast<size_t>(width * height));
+}
 
 void SnakeServer::run() {
     recordServerConfig();
@@ -52,7 +56,8 @@ void SnakeServer::run() {
                 stateChanged = true;
                 break;
             default:
-                spdlog::error("Invalid protocol::MessageType in server dispatch loop: " + std::to_string(static_cast<int>(protocol::header(msg).messageType)));
+                spdlog::error("Invalid protocol::MessageType in server dispatch loop: " +
+                              std::to_string(static_cast<int>(protocol::header(msg).messageType)));
                 break;
             }
         }
@@ -187,7 +192,7 @@ bool SnakeServer::updateSnakes() {
     bool snakeUpdates {false};
 
     // todo maybe do a differential update to occupiedCells if we need better performance
-    occupiedCellsBodies.clear();
+    std::fill(occupiedCellsBodies.begin(), occupiedCellsBodies.end(), uint16_t{0});
     occupiedCellsHeads.clear();
     for (auto & [clientId, player] : clientIdToPlayerMap) {
         if (player.boosted && player.boostExpireTime <= timer.currentTick()) {
@@ -230,7 +235,7 @@ void SnakeServer::updateOccupiedCells(const int clientId) {
     clientIdToPlayerMap.at(clientId).head.getSegments(segments);
     occupiedCellsHeads[segments[0]].insert(clientId);
     for (auto it = segments.begin() + 1; it < segments.end(); it++) {
-        occupiedCellsBodies[*it].insert(clientId);
+        occupiedCellsBodies.at(static_cast<size_t>((it->second - 1) * width + it->first - 1))++;
     }
 }
 
@@ -256,7 +261,7 @@ void SnakeServer::checkCollisions() {
         }
 
         // collision with another snake's body
-        else if (occupiedCellsBodies.contains(playerHead)) {
+        else if (occupiedCellsBodies.at(static_cast<size_t>((playerHead.second - 1) * width + playerHead.first - 1)) > 0) {
             spdlog::info("Destroying " + player.name + " due to snake body collision");
             clientIdsToDestroy.push_back(clientId);
         }
